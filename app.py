@@ -24,6 +24,17 @@ def init_db():
     conn.close()
 
 init_db()
+def get_urgency(deadline, hours):
+    today = datetime.today()
+    deadline_date = datetime.strptime(deadline, "%Y-%m-%d")
+    days_left = (deadline_date - today).days
+
+    if days_left <= 1:
+        return "red"
+    elif days_left <= 3:
+        return "orange"
+    else:
+        return "green"
 
 
 # ---------- HOME PAGE ----------
