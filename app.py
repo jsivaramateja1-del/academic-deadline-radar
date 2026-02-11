@@ -139,6 +139,11 @@ def home():
     for task in tasks:
         deadline = datetime.strptime(task[5], "%Y-%m-%d")
         days_left = (deadline - today).days
+        if days_left < 0:
+            score = -100   # overdue tasks always highest priority
+        else:
+            score = (days_left * 2) + hours
+
         hours = int(task[6])
 
         score = (days_left * 2) + hours
