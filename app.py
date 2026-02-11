@@ -63,6 +63,9 @@ def register():
 # ---------------- LOGIN ----------------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+
+    error = None
+
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -79,9 +82,10 @@ def login():
             session['user'] = username
             return redirect('/')
         else:
-             return render_template('login.html', error="Invalid username or password")
+            error = "Invalid username or password"
 
-    return render_template('login.html')
+    return render_template('login.html', error=error)
+
 
 
 # ---------------- LOGOUT ----------------
