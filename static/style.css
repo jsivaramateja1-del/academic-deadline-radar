@@ -1,70 +1,77 @@
 body {
-    font-family: Arial;
-    margin: 40px;
-    background: #f4f6f8;
+    font-family: Arial, Helvetica, sans-serif;
+    background: #eef2f7;
+    margin: 0;
 }
 
-h1, h2 {
-    color: #222;
-}
-
-.task {
-    padding: 12px;
-    border-radius: 10px;
-    width: 350px;
+/* Top Bar */
+.navbar {
+    background: #2f7df6;
     color: white;
+    padding: 15px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logout-btn {
+    background: #ff4d4d;
+    padding: 8px 14px;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
     font-weight: bold;
 }
 
-/* Urgency colors */
-.red {
-    background: #e74c3c;
+/* Container */
+.container {
+    width: 70%;
+    margin: auto;
+    margin-top: 25px;
 }
 
-.orange {
-    background: #f39c12;
+/* Cards */
+.card {
+    background: white;
+    padding: 18px;
+    margin-top: 15px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
-.green {
-    background: #2ecc71;
-}
-
+/* Form */
 input, select {
-    padding: 6px;
-    margin: 5px 0;
-    width: 220px;
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    margin-bottom: 12px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
 }
 
 button {
-    padding: 8px 15px;
-    background: #3498db;
-    border: none;
+    background: #2f7df6;
     color: white;
-    border-radius: 5px;
-}
-.task-card{
-    padding:12px;
-    border-radius:10px;
-    width:340px;
-    margin-bottom:12px;
-    font-family: Arial;
-    box-shadow:0px 2px 8px rgba(0,0,0,0.2);
+    border: none;
+    padding: 12px;
+    width: 100%;
+    border-radius: 8px;
+    font-size: 15px;
+    cursor: pointer;
 }
 
-/* RED - urgent */
-.high{
-    background:#ffd6d6;
-    border-left:8px solid red;
+button:hover {
+    background: #1e5fd1;
 }
 
-/* ORANGE - medium */
-.medium{
-    background:#fff1c2;
-    border-left:8px solid orange;
+/* Recommended Box */
+.recommend {
+    background: #ffe4e4;
+    border-left: 6px solid #ff4d4d;
 }
 
-/* GREEN - safe */
-.low{
-    background:#d6ffd9;
-    border-left:8px solid green;
+/* Task card */
+.task {
+    background: #e8f0ff;
+    border-left: 6px solid #2f7df6;
 }

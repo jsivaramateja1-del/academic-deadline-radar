@@ -7,49 +7,65 @@
 
 <body>
 
-<div style="background:#2f7df6; padding:12px; color:white; display:flex; justify-content:space-between;">
+<div class="navbar">
     <div><b>Academic Deadline Radar</b></div>
     <div>
         Welcome, <b>{{username}}</b>
         &nbsp;&nbsp;
-        <a href="/logout" style="color:white; text-decoration:none; background:#ff4d4d; padding:6px 10px; border-radius:5px;">Logout</a>
+        <a class="logout-btn" href="/logout">Logout</a>
     </div>
 </div>
 
-<br>
+<div class="container">
 
+<div class="card">
 <h2>Add Task</h2>
 
 <form action="/add" method="POST">
-    Subject:<br>
-    <input type="text" name="subject" required><br><br>
+    Subject:
+    <input type="text" name="subject" required>
 
-    Task Title:<br>
-    <input type="text" name="title" required><br><br>
+    Task Title:
+    <input type="text" name="title" required>
 
-    Type:<br>
+    Type:
     <select name="task_type">
         <option>Assignment</option>
         <option>Exam</option>
         <option>Project</option>
         <option>Lab</option>
-    </select><br><br>
+    </select>
 
-    Deadline:<br>
-    <input type="date" name="deadline" required><br><br>
+    Deadline:
+    <input type="date" name="deadline" required>
 
-    Estimated Hours:<br>
-    <input type="number" name="hours" required><br><br>
+    Estimated Hours:
+    <input type="number" name="hours" required>
 
     <button type="submit">Add Task</button>
 </form>
+</div>
 
-<hr>
 
+<div class="card recommend">
+<h2>📊 Recommended Task To Start Now</h2>
+
+{% if recommended %}
+<b>{{recommended[2]}} - {{recommended[3]}}</b><br>
+Type: {{recommended[4]}}<br>
+Deadline: {{recommended[5]}}<br>
+Estimated Hours: {{recommended[6]}}
+{% else %}
+<p>No tasks yet.</p>
+{% endif %}
+</div>
+
+
+<div class="card">
 <h2>All Tasks</h2>
 
 {% for task in tasks %}
-<div style="background:#e8f0ff; padding:10px; margin:10px; border-radius:8px;">
+<div class="task card">
     <b>{{task[2]}} - {{task[3]}}</b><br>
     Type: {{task[4]}}<br>
     Deadline: {{task[5]}}<br>
@@ -57,20 +73,9 @@
 </div>
 {% endfor %}
 
-<hr>
-
-<h2>📊 Recommended Task To Start Now</h2>
-
-{% if recommended %}
-<div style="background:#ffe4e4; padding:15px; border-radius:10px;">
-    <b>{{recommended[2]}} - {{recommended[3]}}</b><br>
-    Type: {{recommended[4]}}<br>
-    Deadline: {{recommended[5]}}<br>
-    Estimated Hours: {{recommended[6]}}
 </div>
-{% else %}
-<p>No tasks yet.</p>
-{% endif %}
+
+</div>
 
 </body>
 </html>
