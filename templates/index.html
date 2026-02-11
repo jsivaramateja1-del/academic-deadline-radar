@@ -7,68 +7,70 @@
 
 <body>
 
-<h1>Academic Deadline Radar</h1>
+<div style="background:#2f7df6; padding:12px; color:white; display:flex; justify-content:space-between;">
+    <div><b>Academic Deadline Radar</b></div>
+    <div>
+        Welcome, <b>{{username}}</b>
+        &nbsp;&nbsp;
+        <a href="/logout" style="color:white; text-decoration:none; background:#ff4d4d; padding:6px 10px; border-radius:5px;">Logout</a>
+    </div>
+</div>
+
+<br>
 
 <h2>Add Task</h2>
 
 <form action="/add" method="POST">
-
-    <label>Subject:</label><br>
+    Subject:<br>
     <input type="text" name="subject" required><br><br>
 
-    <label>Task Title:</label><br>
+    Task Title:<br>
     <input type="text" name="title" required><br><br>
 
-    <label>Type:</label><br>
+    Type:<br>
     <select name="task_type">
-        <option value="Assignment">Assignment</option>
-        <option value="Lab Record">Lab Record</option>
-        <option value="Exam">Exam</option>
-        <option value="Project">Project</option>
+        <option>Assignment</option>
+        <option>Exam</option>
+        <option>Project</option>
+        <option>Lab</option>
     </select><br><br>
 
-    <label>Deadline:</label><br>
+    Deadline:<br>
     <input type="date" name="deadline" required><br><br>
 
-    <label>Estimated Hours Required:</label><br>
+    Estimated Hours:<br>
     <input type="number" name="hours" required><br><br>
 
     <button type="submit">Add Task</button>
-
 </form>
 
 <hr>
 
 <h2>All Tasks</h2>
 
-{% for t, days_left, priority in tasks %}
-<div class="task-card {{priority}}">
-    <b>{{t[1]}} - {{t[2]}}</b><br>
-    Type: {{t[3]}}<br>
-    Deadline: {{t[4]}}<br>
-    Hours Needed: {{t[5]}}<br>
-    Days Left: {{days_left}}
+{% for task in tasks %}
+<div style="background:#e8f0ff; padding:10px; margin:10px; border-radius:8px;">
+    <b>{{task[2]}} - {{task[3]}}</b><br>
+    Type: {{task[4]}}<br>
+    Deadline: {{task[5]}}<br>
+    Hours Needed: {{task[6]}}
 </div>
-<br>
 {% endfor %}
-
 
 <hr>
 
 <h2>📊 Recommended Task To Start Now</h2>
 
 {% if recommended %}
-<div class="task-card high">
-    <b>{{recommended[0][1]}} - {{recommended[0][2]}}</b><br>
-    Type: {{recommended[0][3]}}<br>
-    Deadline: {{recommended[0][4]}}<br>
-    Estimated Hours: {{recommended[0][5]}}<br>
-    Days Left: {{recommended[1]}}
+<div style="background:#ffe4e4; padding:15px; border-radius:10px;">
+    <b>{{recommended[2]}} - {{recommended[3]}}</b><br>
+    Type: {{recommended[4]}}<br>
+    Deadline: {{recommended[5]}}<br>
+    Estimated Hours: {{recommended[6]}}
 </div>
 {% else %}
-<p>No recommendation yet. Add tasks first.</p>
+<p>No tasks yet.</p>
 {% endif %}
-
 
 </body>
 </html>
