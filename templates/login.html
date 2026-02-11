@@ -5,33 +5,48 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
-<body class="auth-body">
+<body class="auth-bg">
 
-<div class="auth-wrapper">
+<div class="auth-container">
 
-    <div class="hero">
+    <div class="auth-left">
         <h1>Academic Deadline Radar</h1>
-        <p>Smartly decide what to study today.</p>
+        <p class="tagline">Plan smarter. Study calmer.</p>
+
+        <ul>
+            <li>📚 Track assignments & exams</li>
+            <li>⚡ Know what to start first</li>
+            <li>🧠 Reduce last-minute stress</li>
+        </ul>
     </div>
 
-    <form class="card" method="POST">
+    <div class="auth-card">
 
         <h2>Login</h2>
 
-        {% if error %}
-        <div class="error">{{ error }}</div>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="error">{{ messages[0] }}</div>
         {% endif %}
+        {% endwith %}
 
-        <input type="text" name="username" placeholder="Username" required>
-        <input type="password" name="password" placeholder="Password" required>
+        <form method="POST">
 
-        <button>Login</button>
+            <label>Username</label>
+            <input type="text" name="username" required>
+
+            <label>Password</label>
+            <input type="password" name="password" required>
+
+            <button type="submit" class="btn">Login</button>
+
+        </form>
 
         <p class="switch">
             New user? <a href="/register">Create account</a>
         </p>
 
-    </form>
+    </div>
 
 </div>
 

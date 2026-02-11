@@ -1,37 +1,55 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Register</title>
+    <title>Register - Academic Deadline Radar</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
-<body class="auth-body">
+<body class="auth-bg">
 
-<div class="auth-wrapper">
+<div class="auth-container">
 
-    <div class="hero">
+    <div class="auth-left">
         <h1>Academic Deadline Radar</h1>
-        <p>Organize your semester before it organizes you.</p>
+        <p class="tagline">Organize your semester before it organizes you.</p>
+
+        <div class="rules">
+            <h3>Account Rules</h3>
+            <p>Username: minimum 4 characters</p>
+            <p>Password: minimum 6 characters (letters & numbers)</p>
+        </div>
     </div>
 
-    <form class="card" method="POST">
+    <div class="auth-card">
 
         <h2>Create Account</h2>
 
-        {% if error %}
-        <div class="error">{{ error }}</div>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="error">{{ messages[0] }}</div>
         {% endif %}
+        {% endwith %}
 
-        <input type="text" name="username" placeholder="Username" required>
-        <input type="password" name="password" placeholder="Password" required>
+        <form method="POST">
 
-        <button>Register</button>
+            <label>Username</label>
+            <input type="text" name="username" required>
+
+            <label>Password</label>
+            <input type="password" name="password" required>
+
+            <label>Human Check: Solve {{ captcha }}</label>
+            <input type="number" name="captcha" required>
+
+            <button type="submit" class="btn">Register</button>
+
+        </form>
 
         <p class="switch">
             Already have account? <a href="/login">Login</a>
         </p>
 
-    </form>
+    </div>
 
 </div>
 

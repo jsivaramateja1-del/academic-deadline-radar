@@ -1,52 +1,63 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Dashboard</title>
+    <title>Dashboard - Academic Deadline Radar</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="{{ url_for('static', filename='app.js') }}"></script>
 </head>
 
-<body>
+<body class="dashboard-bg">
 
-<header class="topbar">
-    <div>Academic Deadline Radar</div>
-    <div>Welcome, {{ username }} | <a href="/logout">Logout</a></div>
-</header>
+<div class="navbar">
+    <div class="logo">Academic Deadline Radar</div>
+    <div class="user">
+        Welcome, {{ username }} |
+        <a href="/logout">Logout</a>
+    </div>
+</div>
 
-<div class="container">
+<div class="main">
 
-    <div class="task-form">
+    <div class="card add-card">
         <h2>Add Task</h2>
 
-        <form action="/add" method="POST">
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="error">{{ messages[0] }}</div>
+        {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="/add">
 
             <input name="subject" placeholder="Subject" required>
+
             <input name="title" placeholder="Task Title" required>
 
             <select name="task_type">
                 <option>Assignment</option>
                 <option>Exam</option>
+                <option>Lab</option>
                 <option>Project</option>
-                <option>Quiz</option>
+                <option>Presentation</option>
             </select>
 
             <input type="date" name="deadline" required>
-            <input type="number" min="0" name="hours" placeholder="Estimated Hours" required>
 
-            <button>Add Task</button>
+            <input type="number" name="hours" min="0" placeholder="Estimated Hours" required>
+
+            <button class="btn">Add Task</button>
         </form>
     </div>
 
-    <h2>All Tasks</h2>
+    <h2 class="section">All Tasks</h2>
 
     <div class="tasks">
-        {% for task,days,color in tasks %}
-        <div class="task-card {{color}}">
-            <h3>{{task[2]}} - {{task[3]}}</h3>
-            <p>Type: {{task[4]}}</p>
-            <p>Deadline: {{task[5]}}</p>
-            <p>Days Left: {{days}}</p>
-            <p>Hours: {{task[6]}}</p>
+        {% for task, days_left, color in tasks %}
+        <div class="task-card {{ color }}">
+            <h3>{{ task[2] }} - {{ task[3] }}</h3>
+            <p>Type: {{ task[4] }}</p>
+            <p>Deadline: {{ task[5] }}</p>
+            <p>Days Left: {{ days_left }}</p>
+            <p>Hours: {{ task[6] }}</p>
         </div>
         {% endfor %}
     </div>
