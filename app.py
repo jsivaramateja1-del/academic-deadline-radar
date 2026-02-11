@@ -1,3 +1,9 @@
+from flask import Flask, render_template, request, redirect
+import sqlite3
+
+app = Flask(__name__)
+
+# ---------- DATABASE ----------
 def init_db():
     conn = sqlite3.connect('tasks.db')
     c = conn.cursor()
@@ -17,6 +23,21 @@ def init_db():
     conn.close()
 
 init_db()
+
+
+# ---------- HOME PAGE ----------
+@app.route('/')
+def home():
+    conn = sqlite3.connect('tasks.db')
+    c = conn.cursor()
+    c.execute("SELECT * FROM tasks")
+    tasks = c.fetchall()
+    conn.close()
+
+    return render_template('index.html', tasks=tasks)
+
+
+# ---------- ADD TASK ----------
 @app.route('/add', methods=['POST'])
 def add():
     subject = request.form['subject']
@@ -28,19 +49,17 @@ def add():
     conn = sqlite3.connect('tasks.db')
     c = conn.cursor()
 
-    c.execute("INSERT INTO tasks (subject, title, task_type, deadline, hours) VALUES (?, ?, ?, ?, ?)",
-              (subject, title, task_type, deadline, hours))
+    c.execute(
+        "INSERT INTO tasks (subject, title, task_type, deadline, hours) VALUES (?, ?, ?, ?, ?)",
+        (subject, title, task_type, deadline, hours)
+    )
 
     conn.commit()
     conn.close()
 
     return redirect('/')
-@app.route('/')
-def home():
-    conn = sqlite3.connect('tasks.db')
-    c = conn.cursor()
-    c.execute("SELECT * FROM tasks")
-    tasks = c.fetchall()
-    conn.close()
 
-    return render_template('index.html', tasks=tasks)
+
+# ---------- RUN SERVER ----------
+if __name__ == '__main__':
+    app.run(debug=True)
