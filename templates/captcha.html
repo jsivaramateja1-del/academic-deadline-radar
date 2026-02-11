@@ -1,24 +1,28 @@
 <!DOCTYPE html>
+
 <html>
 <head>
-<title>Human Verification</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Verification</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 
-<body class="auth-bg">
+<body class="auth-body">
 
-<div class="auth-box">
+<div class="captcha-box">
 
+```
 <h2>Human Verification</h2>
-<p>Solve to continue</p>
+<p>Solve the math to continue</p>
 
-<h1 class="math">{{ question }}</h1>
+<div class="question">
+    {{ question }}
+</div>
 
-<form method="POST" action="/verify_captcha">
-    <input type="number" name="captcha" placeholder="Answer" required>
-    <input type="hidden" name="next" value="{{ next }}">
+<form method="POST" action="/{{mode}}">
+    <input type="number" name="captcha" placeholder="Your Answer" required>
     <button class="btn">Verify</button>
 </form>
+```
 
 </div>
 

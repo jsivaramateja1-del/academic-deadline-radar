@@ -1,52 +1,52 @@
 <!DOCTYPE html>
+
 <html>
 <head>
     <title>Login - Academic Deadline Radar</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 
-<body class="auth-bg">
+<body class="auth-body">
 
 <div class="auth-container">
 
-    <div class="auth-left">
-        <h1>Academic Deadline Radar</h1>
-        <p class="tagline">Plan smarter. Study calmer.</p>
+```
+<div class="auth-left">
+    <h1>Academic Deadline Radar</h1>
+    <p class="tag">Plan smarter. Study calmer.</p>
 
-        <ul>
-            <li>📚 Track assignments & exams</li>
-            <li>⚡ Know what to start first</li>
-            <li>🧠 Reduce last-minute stress</li>
-        </ul>
-    </div>
+    <ul class="features">
+        <li>📚 Track assignments & exams</li>
+        <li>⚡ Know what to start first</li>
+        <li>🧠 Reduce last-minute stress</li>
+    </ul>
+</div>
 
-    <div class="auth-card">
+<div class="auth-box">
 
-        <h2>Login</h2>
+    <h2>Login</h2>
 
-        {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            <div class="error">{{ messages[0] }}</div>
-        {% endif %}
-        {% endwith %}
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <div class="error-box">
+            {{ messages[0] }}
+        </div>
+    {% endif %}
+    {% endwith %}
 
-        <form method="POST">
+    <form method="POST">
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
 
-            <label>Username</label>
-            <input type="text" name="username" required>
+        <button class="btn">Login</button>
+    </form>
 
-            <label>Password</label>
-            <input type="password" name="password" required>
+    <p class="switch">
+        New user? <a href="/register">Create account</a>
+    </p>
 
-            <button type="submit" class="btn">Login</button>
-
-        </form>
-
-        <p class="switch">
-            New user? <a href="/register">Create account</a>
-        </p>
-
-    </div>
+</div>
+```
 
 </div>
 
