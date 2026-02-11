@@ -105,8 +105,12 @@ def add():
     title = request.form['title']
     task_type = request.form['task_type']
     deadline = request.form['deadline']
-    hours = request.form['hours']
+    hours = int(request.form['hours'])
 
+    if hours <= 0:
+        return redirect('/')
+
+    
     if not subject or not title or not deadline or not hours:
         return redirect('/')
 
