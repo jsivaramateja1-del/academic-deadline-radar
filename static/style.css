@@ -5,6 +5,7 @@ background:linear-gradient(135deg,#0f172a,#1e3a8a);
 color:white;
 }
 
+/* center card */
 .center{
 height:100vh;
 display:flex;
@@ -12,6 +13,7 @@ justify-content:center;
 align-items:center;
 }
 
+/* login/register box */
 .card{
 background:rgba(255,255,255,0.12);
 backdrop-filter:blur(14px);
@@ -22,6 +24,7 @@ text-align:center;
 box-shadow:0 0 30px rgba(0,0,0,.5);
 }
 
+/* inputs */
 input{
 width:100%;
 padding:12px;
@@ -29,13 +32,19 @@ margin:10px 0;
 border:none;
 border-radius:10px;
 outline:none;
+background:#e5e7eb;
+color:black;
+font-weight:500;
 }
 
+/* glow animation when typing */
 input:focus{
 box-shadow:0 0 12px #38bdf8;
 transform:scale(1.05);
+transition:.25s;
 }
 
+/* button */
 button{
 width:100%;
 padding:12px;
@@ -45,8 +54,31 @@ background:linear-gradient(90deg,#22d3ee,#6366f1);
 color:white;
 font-weight:bold;
 cursor:pointer;
+transition:.25s;
 }
 
+button:hover{
+transform:scale(1.05);
+}
+
+/* ===== IMPORTANT PART YOU ASKED ===== */
+
+/* Create account + Login links BLACK */
+.card a{
+color:black;
+font-weight:600;
+text-decoration:none;
+display:block;
+margin-top:12px;
+}
+
+/* hover effect */
+.card a:hover{
+text-decoration:underline;
+color:#111;
+}
+
+/* header */
 header{
 background:#020617;
 padding:20px;
@@ -54,11 +86,13 @@ display:flex;
 justify-content:space-between;
 }
 
+/* add task section */
 .add{
 width:500px;
 margin:40px auto;
 }
 
+/* task grid */
 .tasks{
 display:flex;
 flex-wrap:wrap;
@@ -66,6 +100,7 @@ gap:20px;
 justify-content:center;
 }
 
+/* task cards */
 .task{
 padding:20px;
 border-radius:14px;
@@ -74,11 +109,13 @@ color:black;
 font-weight:bold;
 }
 
+/* urgency colors */
 .red{background:#ef4444;}
 .orange{background:#f97316;}
 .yellow{background:#fde047;}
 .green{background:#22c55e;}
 
+/* flash messages */
 .flash{
 position:fixed;
 top:20px;
