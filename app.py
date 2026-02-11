@@ -11,7 +11,6 @@ def init_db():
     conn = sqlite3.connect('tasks.db')
     c = conn.cursor()
 
-    # USERS TABLE
     c.execute('''
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,7 +19,6 @@ def init_db():
     )
     ''')
 
-    # TASKS TABLE (linked to user)
     c.execute('''
     CREATE TABLE IF NOT EXISTS tasks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,8 +34,8 @@ def init_db():
     conn.commit()
     conn.close()
 
-
 init_db()
+
 
 # ---------------- REGISTER ----------------
 @app.route('/register', methods=['GET', 'POST'])
@@ -91,8 +89,6 @@ def login():
 def logout():
     session.pop('user', None)
     return redirect('/login')
-if not subject or not title or not deadline or not hours:
-    return redirect('/')
 
 
 # ---------------- ADD TASK ----------------
@@ -106,6 +102,10 @@ def add():
     task_type = request.form['task_type']
     deadline = request.form['deadline']
     hours = request.form['hours']
+
+    # form validation
+    if not subject or not title or not deadline or not hours:
+        return redirect('/')
 
     conn = sqlite3.connect('tasks.db')
     c = conn.cursor()
@@ -133,7 +133,6 @@ def home():
     c.execute("SELECT * FROM tasks WHERE user=?", (session['user'],))
     tasks = c.fetchall()
 
-    # Recommendation algorithm
     recommended = None
     today = datetime.today()
     best_score = 999999
@@ -141,14 +140,13 @@ def home():
     for task in tasks:
         deadline = datetime.strptime(task[5], "%Y-%m-%d")
         days_left = (deadline - today).days
-        if days_left < 0:
-            score = -100   # overdue tasks always highest priority
-        else:
-            score = (days_left * 2) + hours
-
         hours = int(task[6])
 
-        score = (days_left * 2) + hours
+        # overdue priority
+        if days_left < 0:
+            score = -100
+        else:
+            score = (days_left * 2) + hours
 
         if score < best_score:
             best_score = score
