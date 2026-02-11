@@ -1,25 +1,68 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Login</title>
+    <title>Academic Deadline Radar | Smart Study Planner</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
 
-<div class="center-card">
-<h2>Login</h2>
+<body style="background:linear-gradient(120deg,#2563eb,#4f46e5); color:white;">
 
-{% if error %}
-<p class="error">{{error}}</p>
-{% endif %}
+<div style="display:flex; height:100vh; align-items:center; justify-content:center; gap:80px;">
 
-<form method="POST">
-    <input type="text" name="username" placeholder="Username" required>
-    <input type="password" name="password" placeholder="Password" required>
-    <button type="submit">Login</button>
-</form>
+    <!-- LEFT SIDE (Title + Explanation) -->
+    <div style="max-width:420px;">
+        <h1 style="font-size:40px; font-weight:600;">
+            Academic Deadline Radar
+        </h1>
 
-<p>Don't have an account? <a href="/register">Register</a></p>
+        <p style="margin-top:20px; font-size:18px; line-height:1.6;">
+            A smart academic planner that analyzes your assignments, exams, and projects
+            and recommends what you should start first based on urgency and effort.
+        </p>
+
+        <ul style="margin-top:25px; line-height:1.8;">
+            <li>✔ Tracks all academic tasks</li>
+            <li>✔ Suggests the most important work</li>
+            <li>✔ Predicts your workload</li>
+            <li>✔ Helps avoid last-minute stress</li>
+        </ul>
+    </div>
+
+    <!-- RIGHT SIDE (Login Box) -->
+    <div class="auth-box" style="color:black;">
+
+        <h2 style="text-align:center;">Login</h2>
+
+        {% if error %}
+        <div style="
+            background:#fee2e2;
+            color:#b91c1c;
+            padding:10px;
+            border-radius:6px;
+            margin-bottom:15px;
+            text-align:center;">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="POST">
+
+            <label>Username</label>
+            <input type="text" name="username" required>
+
+            <label>Password</label>
+            <input type="password" name="password" required>
+
+            <button type="submit">Login</button>
+
+        </form>
+
+        <div class="auth-link">
+            New user? <a href="/register">Create account</a>
+        </div>
+
+    </div>
+
 </div>
 
 </body>
