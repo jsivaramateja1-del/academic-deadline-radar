@@ -1,0 +1,27 @@
+<h2>Add Task</h2>
+
+<form action="/add" method="POST">
+
+Subject:<br>
+<input type="text" name="subject" required><br><br>
+
+Task Title:<br>
+<input type="text" name="title" required><br><br>
+
+Type:<br>
+<select name="task_type">
+    <option value="Assignment">Assignment</option>
+    <option value="Lab">Lab</option>
+    <option value="Project">Project</option>
+    <option value="Exam">Exam</option>
+</select><br><br>
+
+Deadline:<br>
+<input type="date" name="deadline" required><br><br>
+
+Estimated Hours Required:<br>
+<input type="number" name="hours" min="1" max="20" required><br><br>
+
+<button type="submit">Add Task</button>
+
+</form>
