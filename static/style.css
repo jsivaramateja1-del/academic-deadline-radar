@@ -1,127 +1,45 @@
-body{
-margin:0;
-font-family:Segoe UI;
-background:linear-gradient(135deg,#0f172a,#1e3a8a);
-color:white;
+body{font-family:Arial;margin:0}
+
+.bg{
+background:linear-gradient(135deg,#1d2b64,#f8cdda);
+height:100vh;display:flex;justify-content:center;align-items:center;
 }
 
-/* center card */
-.center{
-height:100vh;
-display:flex;
-justify-content:center;
-align-items:center;
-}
-
-/* login/register box */
 .card{
-background:rgba(255,255,255,0.12);
-backdrop-filter:blur(14px);
-padding:40px;
-border-radius:18px;
-width:320px;
-text-align:center;
-box-shadow:0 0 30px rgba(0,0,0,.5);
+background:white;padding:30px;border-radius:12px;
+width:300px;text-align:center;
+box-shadow:0 0 25px rgba(0,0,0,.3);
 }
 
-/* inputs */
-input{
-width:100%;
-padding:12px;
-margin:10px 0;
-border:none;
-border-radius:10px;
-outline:none;
-background:#e5e7eb;
-color:black;
-font-weight:500;
+input,select,button{
+width:100%;padding:10px;margin:8px 0;border-radius:6px;border:1px solid #ccc;
 }
 
-/* glow animation when typing */
-input:focus{
-box-shadow:0 0 12px #38bdf8;
-transform:scale(1.05);
-transition:.25s;
-}
-
-/* button */
 button{
-width:100%;
-padding:12px;
-border:none;
-border-radius:10px;
-background:linear-gradient(90deg,#22d3ee,#6366f1);
-color:white;
-font-weight:bold;
-cursor:pointer;
-transition:.25s;
+background:#1d2b64;color:white;font-weight:bold;border:none;
 }
 
-button:hover{
-transform:scale(1.05);
+.error{
+background:#ff5a5a;color:white;padding:10px;border-radius:6px;margin-bottom:10px;
 }
 
-/* ===== IMPORTANT PART YOU ASKED ===== */
+.link{display:block;margin-top:10px;color:black}
 
-/* Create account + Login links BLACK */
-.card a{
-color:black;
-font-weight:600;
-text-decoration:none;
-display:block;
-margin-top:12px;
+.dark{background:#0b1220;color:white;min-height:100vh}
+
+.topbar{background:#111;padding:15px}
+
+.taskbox{
+background:#1b2436;padding:20px;border-radius:10px;margin:20px;
 }
 
-/* hover effect */
-.card a:hover{
-text-decoration:underline;
-color:#111;
-}
+.tasks{display:flex;gap:20px;flex-wrap:wrap;padding:20px}
 
-/* header */
-header{
-background:#020617;
-padding:20px;
-display:flex;
-justify-content:space-between;
-}
-
-/* add task section */
-.add{
-width:500px;
-margin:40px auto;
-}
-
-/* task grid */
-.tasks{
-display:flex;
-flex-wrap:wrap;
-gap:20px;
-justify-content:center;
-}
-
-/* task cards */
 .task{
-padding:20px;
-border-radius:14px;
-width:220px;
-color:black;
-font-weight:bold;
+padding:15px;border-radius:10px;width:220px;color:black;
 }
 
-/* urgency colors */
-.red{background:#ef4444;}
-.orange{background:#f97316;}
-.yellow{background:#fde047;}
-.green{background:#22c55e;}
-
-/* flash messages */
-.flash{
-position:fixed;
-top:20px;
-left:50%;
-transform:translateX(-50%);
-background:#ef4444;
-padding:12px;
-border-radius:10px;
-}
+.red{background:#ff4d4d}
+.orange{background:#ff944d}
+.yellow{background:#ffe066}
+.green{background:#7dff7d}

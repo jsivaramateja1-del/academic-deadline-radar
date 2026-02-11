@@ -1,118 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Login - Academic Deadline Radar</title>
-    <style>
-        body{
-            margin:0;
-            height:100vh;
-            font-family:Segoe UI, sans-serif;
-            background:linear-gradient(135deg,#0f172a,#1e3a8a);
-            display:flex;
-            justify-content:center;
-            align-items:center;
-            color:white;
-        }
-
-        .card{
-            background:#2b3656;
-            padding:35px;
-            border-radius:18px;
-            width:340px;
-            text-align:center;
-            box-shadow:0 15px 40px rgba(0,0,0,.45);
-            animation:fade .5s ease;
-        }
-
-        @keyframes fade{
-            from{opacity:0; transform:translateY(20px);}
-            to{opacity:1; transform:translateY(0);}
-        }
-
-        h2{margin-bottom:20px;}
-
-        input{
-            width:100%;
-            padding:12px;
-            margin:10px 0;
-            border-radius:10px;
-            border:none;
-            background:white;
-            color:black;
-            font-size:14px;
-        }
-
-        button{
-            width:100%;
-            padding:12px;
-            margin-top:10px;
-            border:none;
-            border-radius:12px;
-            font-weight:bold;
-            font-size:15px;
-            cursor:pointer;
-            background:linear-gradient(90deg,#22d3ee,#6366f1);
-            color:white;
-            transition:.25s;
-        }
-
-        button:hover{
-            transform:scale(1.03);
-        }
-
-        .link{
-            margin-top:14px;
-            display:block;
-            color:black;
-            font-weight:bold;
-            text-decoration:none;
-        }
-
-        .flash{
-            background:#ef4444;
-            padding:10px;
-            border-radius:10px;
-            margin-bottom:10px;
-        }
-
-        .captcha{
-            margin-top:8px;
-            font-size:14px;
-            color:#e2e8f0;
-        }
-    </style>
+<title>Login</title>
+<link rel="stylesheet" href="/static/style.css">
 </head>
-
-<body>
+<body class="bg">
 
 <div class="card">
+<h2>Academic Deadline Radar</h2>
 
-    <h2>Academic Deadline Radar</h2>
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+<div class="error">{{messages[0]}}</div>
+{% endif %}
+{% endwith %}
 
-    {% with messages = get_flashed_messages() %}
-    {% if messages %}
-        {% for msg in messages %}
-        <div class="flash">{{msg}}</div>
-        {% endfor %}
-    {% endif %}
-    {% endwith %}
+<form method="POST">
 
-    <form method="POST">
+<input name="username" placeholder="Username" required>
+<input name="password" type="password" placeholder="Password" required>
 
-        <input name="username" placeholder="Username" required>
-        <input name="password" type="password" placeholder="Password" required>
+<p>Solve: {{question}}</p>
+<input name="answer" placeholder="Answer" required>
 
-        <div class="captcha">
-            Solve: {{num1}} + {{num2}}
-        </div>
-        <input name="answer" placeholder="Answer" required>
+<button type="submit">Login</button>
 
-        <button type="submit">Login</button>
+</form>
 
-    </form>
-
-    <a class="link" href="/register">Create account</a>
-
+<a href="/register" class="link">Create account</a>
 </div>
 
 </body>

@@ -2,86 +2,19 @@
 <html>
 <head>
 <title>Dashboard</title>
-<style>
-body{
-    margin:0;
-    font-family:Segoe UI;
-    background:#020617;
-    color:white;
-}
-
-.nav{
-    background:#0f172a;
-    padding:15px 30px;
-    display:flex;
-    justify-content:space-between;
-}
-
-.container{
-    width:80%;
-    margin:30px auto;
-}
-
-.card{
-    background:#0f172a;
-    padding:25px;
-    border-radius:16px;
-    margin-bottom:30px;
-}
-
-input,select{
-    width:100%;
-    padding:12px;
-    margin:10px 0;
-    border-radius:10px;
-    border:none;
-}
-
-button{
-    width:100%;
-    padding:12px;
-    border:none;
-    border-radius:12px;
-    background:linear-gradient(90deg,#22d3ee,#6366f1);
-    color:white;
-    font-weight:bold;
-    cursor:pointer;
-}
-
-.tasks{
-    display:flex;
-    flex-wrap:wrap;
-    gap:20px;
-}
-
-.task{
-    width:240px;
-    padding:15px;
-    border-radius:14px;
-    color:black;
-    font-weight:bold;
-}
-.red{background:#ef4444;}
-.orange{background:#f97316;}
-.yellow{background:#fde047;}
-.green{background:#22c55e;}
-
-</style>
+<link rel="stylesheet" href="/static/style.css">
 </head>
+<body class="dark">
 
-<body>
-
-<div class="nav">
-<div>Academic Deadline Radar</div>
-<div>Welcome {{username}} | <a href="/logout" style="color:#f87171;">Logout</a></div>
+<div class="topbar">
+Welcome {{username}} | <a href="/logout">Logout</a>
 </div>
 
-<div class="container">
+<div class="taskbox">
 
-<div class="card">
-<h3>Add Task</h3>
-<form method="POST" action="/add_task">
+<h2>Add Task</h2>
 
+<form action="/add_task" method="POST">
 <input name="subject" placeholder="Subject" required>
 <input name="title" placeholder="Task Title" required>
 
@@ -90,70 +23,29 @@ button{
 <option>Exam</option>
 <option>Lab</option>
 <option>Project</option>
-<option>Presentation</option>
 </select>
 
-<input type="date" name="deadline" required>
-<input type="number" name="hours" placeholder="Estimated hours" required>
+<input name="deadline" type="date" required>
+<input name="hours" type="number" min="0" placeholder="Estimated Hours" required>
 
 <button>Add Task</button>
 </form>
+
 </div>
+
+<h2>Your Tasks</h2>
 
 <div class="tasks">
 
 {% for t in tasks %}
-{% set days = ((t[5]|tojson|safe)|string) %}
-{% set today = namespace(val=0) %}
-
-{% set deadline = t[5] %}
-{% set diff = ( (deadline|tojson|safe) ) %}
-
-{% set dleft = ((deadline | string)) %}
-
-{% set days_left = ( (deadline | string) ) %}
-
-{% set days_left = ((deadline|string)) %}
-
-{% set class="green" %}
-{% if t[5] %}
-{% set import_datetime = namespace(now=cycler) %}
-{% endif %}
-
-{% set days_left = ( (t[5]) ) %}
-
-{% if days_left %}
-{% set class="green" %}
-{% endif %}
-
-{% if t[5] %}
-{% set from datetime import datetime %}
-{% endif %}
-
-{% set deadline_date = t[5] %}
-{% set now = "" %}
-
-{% set days = 0 %}
-
-{% if t[5] %}
-{% set days = 0 %}
-{% endif %}
-
-{% set class="green" %}
-{% if t[5] %}
-{% set class="red" %}
-{% endif %}
-
-<div class="task red">
-<b>{{t[2]}} - {{t[3]}}</b><br>
-Type: {{t[4]}}<br>
-Deadline: {{t[5]}}<br>
-Hours: {{t[6]}}
+<div class="task {{t.color}}">
+<b>{{t.subject}} - {{t.title}}</b><br>
+Type: {{t.type}}<br>
+Deadline: {{t.deadline}}<br>
+Days Left: {{t.days_left}}<br>
+Hours: {{t.hours}}
 </div>
-
 {% endfor %}
-
-</div>
 
 </div>
 

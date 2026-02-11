@@ -1,28 +1,29 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, session, flash
 import sqlite3
 import random
-from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = "super_secret_key_123"
+app.secret_key = "hackathon_secret_key_123"
 
 # ---------------- DATABASE ----------------
+
 def init_db():
     conn = sqlite3.connect("database.db")
-    cur = conn.cursor()
+    c = conn.cursor()
 
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS users(
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE,
         password TEXT
     )
     """)
 
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS tasks(
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS tasks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
+        username TEXT,
         subject TEXT,
         title TEXT,
         type TEXT,
@@ -36,162 +37,175 @@ def init_db():
 
 init_db()
 
-# ---------------- CAPTCHA GENERATOR ----------------
-def generate_captcha():
+# ---------------- BOT QUESTION ----------------
+
+def generate_question():
     a = random.randint(1,9)
     b = random.randint(1,9)
-    session['captcha'] = str(a + b)
-    return a, b
+    session['captcha_answer'] = str(a+b)
+    session['captcha_question'] = f"{a} + {b}"
 
 # ---------------- REGISTER ----------------
+
 @app.route('/register', methods=['GET','POST'])
 def register():
 
     if request.method == 'POST':
 
-        username = request.form.get('username','').strip()
-        password = request.form.get('password','').strip()
-        answer = request.form.get('answer','').strip()
+        username = request.form['username']
+        password = request.form['password']
+        answer = request.form['answer']
 
-        # captcha check
-        if 'captcha' not in session:
-            flash("Verification expired. Try again.")
-            return redirect(url_for('register'))
+        if answer != session.get('captcha_answer'):
+            flash("Wrong verification answer")
+            generate_question()
+            return redirect('/register')
 
-        if answer != session['captcha']:
-            flash("Wrong verification answer.")
-            return redirect(url_for('register'))
-
-        # validation
         if len(username) < 4:
-            flash("Username must be at least 4 characters.")
-            return redirect(url_for('register'))
+            flash("Username must be at least 4 characters")
+            generate_question()
+            return redirect('/register')
 
         if len(password) < 6:
-            flash("Password must be at least 6 characters.")
-            return redirect(url_for('register'))
+            flash("Password must be at least 6 characters")
+            generate_question()
+            return redirect('/register')
 
-        conn = sqlite3.connect("database.db")
-        cur = conn.cursor()
-
-        cur.execute("SELECT username FROM users WHERE username = ?", (username,))
-        existing = cur.fetchone()
-
-        if existing:
+        try:
+            conn = sqlite3.connect("database.db")
+            c = conn.cursor()
+            c.execute("INSERT INTO users(username,password) VALUES (?,?)",(username,password))
+            conn.commit()
             conn.close()
+            flash("Account created! Please login.")
+            return redirect('/login')
+
+        except:
             flash("Username already exists")
-            return redirect(url_for('register'))
+            generate_question()
+            return redirect('/register')
 
-        hashed = generate_password_hash(password)
-
-        cur.execute("INSERT INTO users (username,password) VALUES (?,?)",(username,hashed))
-        conn.commit()
-        conn.close()
-
-        session.pop('captcha', None)
-
-        flash("Account created successfully! Please login.")
-        return redirect(url_for('login'))
-
-    a,b = generate_captcha()
-    return render_template("register.html", num1=a, num2=b)
-
+    generate_question()
+    return render_template("register.html", question=session.get('captcha_question'))
 
 # ---------------- LOGIN ----------------
+
+@app.route('/', methods=['GET','POST'])
 @app.route('/login', methods=['GET','POST'])
 def login():
 
     if request.method == 'POST':
 
-        username = request.form.get('username','').strip()
-        password = request.form.get('password','').strip()
-        answer = request.form.get('answer','').strip()
+        username = request.form['username']
+        password = request.form['password']
+        answer = request.form['answer']
 
-        if 'captcha' not in session:
-            flash("Verification expired.")
-            return redirect(url_for('login'))
-
-        if answer != session['captcha']:
-            flash("Wrong verification answer.")
-            return redirect(url_for('login'))
+        if answer != session.get('captcha_answer'):
+            flash("Wrong verification answer")
+            generate_question()
+            return redirect('/login')
 
         conn = sqlite3.connect("database.db")
-        cur = conn.cursor()
+        c = conn.cursor()
 
-        cur.execute("SELECT * FROM users WHERE username = ?",(username,))
-        user = cur.fetchone()
+        c.execute("SELECT * FROM users WHERE username=? AND password=?",(username,password))
+        user = c.fetchone()
         conn.close()
 
-        if user and check_password_hash(user[2], password):
-            session['user_id'] = user[0]
-            session['username'] = user[1]
-            session.pop('captcha', None)
-            return redirect(url_for('dashboard'))
+        if user:
+            session['user'] = username
+            return redirect('/dashboard')
         else:
-            flash("Invalid username or password.")
-            return redirect(url_for('login'))
+            flash("Invalid username or password")
+            generate_question()
+            return redirect('/login')
 
-    a,b = generate_captcha()
-    return render_template("login.html", num1=a, num2=b)
-
+    generate_question()
+    return render_template("login.html", question=session.get('captcha_question'))
 
 # ---------------- DASHBOARD ----------------
-@app.route('/')
+
 @app.route('/dashboard')
 def dashboard():
 
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
+    if 'user' not in session:
+        return redirect('/login')
 
     conn = sqlite3.connect("database.db")
-    cur = conn.cursor()
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
 
-    cur.execute("SELECT * FROM tasks WHERE user_id=?",(session['user_id'],))
-    tasks = cur.fetchall()
+    c.execute("SELECT * FROM tasks WHERE username=?",(session['user'],))
+    rows = c.fetchall()
+
+    tasks = []
+    today = datetime.now().date()
+
+    for r in rows:
+        deadline_date = datetime.strptime(r["deadline"], "%Y-%m-%d").date()
+        days_left = (deadline_date - today).days
+
+        if days_left < 0:
+            color = "red"
+        elif days_left <= 1:
+            color = "red"
+        elif days_left <= 3:
+            color = "orange"
+        elif days_left <= 7:
+            color = "yellow"
+        else:
+            color = "green"
+
+        tasks.append({
+            "subject": r["subject"],
+            "title": r["title"],
+            "type": r["type"],
+            "deadline": r["deadline"],
+            "hours": r["hours"],
+            "days_left": days_left,
+            "color": color
+        })
+
     conn.close()
 
-    return render_template("dashboard.html", tasks=tasks, username=session['username'])
-
+    return render_template("dashboard.html",username=session['user'],tasks=tasks)
 
 # ---------------- ADD TASK ----------------
+
 @app.route('/add_task', methods=['POST'])
 def add_task():
 
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
+    if 'user' not in session:
+        return redirect('/login')
 
-    subject = request.form.get('subject')
-    title = request.form.get('title')
-    task_type = request.form.get('type')
-    deadline = request.form.get('deadline')
-    hours = request.form.get('hours')
+    subject = request.form['subject']
+    title = request.form['title']
+    type_ = request.form['type']
+    deadline = request.form['deadline']
+    hours = request.form['hours']
 
-    try:
-        hours = int(hours)
-        if hours < 0:
-            hours = 0
-    except:
+    if int(hours) < 0:
         hours = 0
 
     conn = sqlite3.connect("database.db")
-    cur = conn.cursor()
+    c = conn.cursor()
 
-    cur.execute("""
-    INSERT INTO tasks (user_id,subject,title,type,deadline,hours)
+    c.execute("""
+    INSERT INTO tasks(username,subject,title,type,deadline,hours)
     VALUES (?,?,?,?,?,?)
-    """,(session['user_id'],subject,title,task_type,deadline,hours))
+    """,(session['user'],subject,title,type_,deadline,hours))
 
     conn.commit()
     conn.close()
 
-    return redirect(url_for('dashboard'))
+    return redirect('/dashboard')
 
 # ---------------- LOGOUT ----------------
+
 @app.route('/logout')
 def logout():
-    session.clear()
-    return redirect(url_for('login'))
+    session.pop('user',None)
+    return redirect('/login')
 
-# ---------------- RUN ----------------
-if __name__ == "__main__":
+if __name__ == '__main__':
     app.run(debug=True)
