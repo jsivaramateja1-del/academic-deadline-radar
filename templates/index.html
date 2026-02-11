@@ -25,3 +25,14 @@ Estimated Hours Required:<br>
 <button type="submit">Add Task</button>
 
 </form>
+<h2>All Tasks</h2>
+<ul>
+{% for task in tasks %}
+    <li>
+        <b>{{task[1]}} - {{task[2]}}</b><br>
+        Type: {{task[3]}}<br>
+        Deadline: {{task[4]}}<br>
+        Hours Needed: {{task[5]}}
+    </li>
+{% endfor %}
+</ul>
