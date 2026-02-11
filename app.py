@@ -52,30 +52,40 @@ def home():
     c = conn.cursor()
 
     c.execute("SELECT * FROM tasks")
-    tasks = c.fetchall()
+    raw_tasks = c.fetchall()
 
-    # RECOMMENDATION ALGORITHM
-    recommended = None
+    conn.close()
+
     today = datetime.today()
 
+    tasks = []
+    recommended = None
     best_score = 999999
 
-    for task in tasks:
+    for task in raw_tasks:
         deadline = datetime.strptime(task[4], "%Y-%m-%d")
         days_left = (deadline - today).days
-
         hours = int(task[5])
 
-        # Priority formula
+        # ---- PRIORITY COLOR ----
+        if days_left <= 2:
+            priority = "high"
+        elif days_left <= 5:
+            priority = "medium"
+        else:
+            priority = "low"
+
+        # ---- RECOMMENDATION SCORE ----
         score = (days_left * 2) + hours
 
         if score < best_score:
             best_score = score
-            recommended = task
+            recommended = (task, days_left, priority)
 
-    conn.close()
+        tasks.append((task, days_left, priority))
 
     return render_template('index.html', tasks=tasks, recommended=recommended)
+
 
 
 if __name__ == '__main__':
