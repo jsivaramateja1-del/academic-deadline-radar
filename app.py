@@ -35,3 +35,12 @@ def add():
     conn.close()
 
     return redirect('/')
+@app.route('/')
+def home():
+    conn = sqlite3.connect('tasks.db')
+    c = conn.cursor()
+    c.execute("SELECT * FROM tasks")
+    tasks = c.fetchall()
+    conn.close()
+
+    return render_template('index.html', tasks=tasks)
