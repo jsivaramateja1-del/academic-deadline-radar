@@ -1,69 +1,38 @@
-<!DOCTYPE html>
+{% extends "base.html" %}
+{% block content %}
 
-<html>
-<head>
-    <title>Dashboard</title>
-    <link rel="stylesheet" href="/static/style.css">
-</head>
+<header>
+<h2>Academic Deadline Radar</h2>
+<div>Welcome {{username}} | <a href="/logout">Logout</a></div>
+</header>
 
-<body class="dash-body">
+<section class="add">
 
-<div class="navbar">
-    <h2>Academic Deadline Radar</h2>
-    <div>
-        Welcome, {{username}} |
-        <a href="/logout">Logout</a>
-    </div>
+<form action="/add" method="POST">
+
+<input name="subject" placeholder="Subject" required>
+<input name="title" placeholder="Task Title" required>
+<input name="task_type" placeholder="Type (quiz, lab, record...)" required>
+<input type="date" name="deadline" required>
+<input type="number" name="hours" placeholder="Estimated hours" required>
+
+<button>Add Task</button>
+</form>
+
+</section>
+
+<div class="tasks">
+
+{% for t,days,color in tasks %}
+<div class="task {{color}}">
+<h3>{{t[2]}}</h3>
+<p>{{t[3]}}</p>
+<p>{{t[4]}}</p>
+<p>Due in {{days}} days</p>
+<p>{{t[6]}} hrs</p>
 </div>
-
-<div class="container">
-
-```
-{% with messages = get_flashed_messages() %}
-{% if messages %}
-    <div class="error-box">
-        {{ messages[0] }}
-    </div>
-{% endif %}
-{% endwith %}
-
-<div class="card add">
-    <h3>Add Task</h3>
-    <form method="POST" action="/add">
-
-        <input type="text" name="subject" placeholder="Subject" required>
-        <input type="text" name="title" placeholder="Task title" required>
-
-        <select name="task_type">
-            <option>Assignment</option>
-            <option>Lab</option>
-            <option>Project</option>
-            <option>Exam</option>
-        </select>
-
-        <input type="date" name="deadline" required>
-        <input type="number" name="hours" placeholder="Estimated hours" required>
-
-        <button class="btn">Add Task</button>
-    </form>
-</div>
-
-<h3 class="task-title">Your Tasks</h3>
-
-<div class="task-grid">
-    {% for t,color,days in tasks %}
-    <div class="task {{color}}">
-        <h4>{{t[2]}} - {{t[3]}}</h4>
-        <p>Type: {{t[4]}}</p>
-        <p>Deadline: {{t[5]}}</p>
-        <p>Days Left: {{days}}</p>
-        <p>Hours: {{t[6]}}</p>
-    </div>
-    {% endfor %}
-</div>
-```
+{% endfor %}
 
 </div>
 
-</body>
-</html>
+{% endblock %}

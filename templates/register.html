@@ -1,54 +1,38 @@
-<!DOCTYPE html>
+{% extends "base.html" %}
+{% block content %}
 
-<html>
-<head>
-    <title>Create Account - Academic Deadline Radar</title>
-    <link rel="stylesheet" href="/static/style.css">
-</head>
+<div class="center">
+<div class="card">
 
-<body class="auth-body">
+<h2>Create Account</h2>
 
-<div class="auth-container">
+<form method="POST">
 
-```
-<div class="auth-left">
-    <h1>Academic Deadline Radar</h1>
-    <p class="tag">Organize your semester before it organizes you.</p>
+<input name="username" placeholder="Username (min 4 chars)" required>
+<input type="password" name="password" id="pass" placeholder="Password (min 6 chars)" required>
 
-    <div class="rules">
-        <h3>Account Rules</h3>
-        <p>Username → minimum 4 characters</p>
-        <p>Password → minimum 6 characters</p>
-    </div>
+<div id="strength"></div>
+
+<div class="captcha">
+<span id="q">Loading...</span>
+<input name="captcha" placeholder="Answer" required>
 </div>
 
-<div class="auth-box">
+<button>Register</button>
 
-    <h2>Create Account</h2>
+</form>
 
-    {% with messages = get_flashed_messages() %}
-    {% if messages %}
-        <div class="error-box">
-            {{ messages[0] }}
-        </div>
-    {% endif %}
-    {% endwith %}
-
-    <form method="POST">
-        <input type="text" name="username" placeholder="Choose username" required>
-        <input type="password" name="password" placeholder="Choose password" required>
-
-        <button class="btn">Register</button>
-    </form>
-
-    <p class="switch">
-        Already have account? <a href="/login">Login</a>
-    </p>
+<a href="/login">Already have account?</a>
 
 </div>
-```
-
 </div>
 
-</body>
-</html>
+<script>
+fetch("/captcha_question")
+.then(r=>r.json())
+.then(d=>{
+document.getElementById("q").innerText="Solve: "+d.q;
+});
+</script>
+
+{% endblock %}

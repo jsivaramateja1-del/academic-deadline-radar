@@ -1,30 +1,12 @@
-<!DOCTYPE html>
-
-<html>
-<head>
-    <title>Verification</title>
-    <link rel="stylesheet" href="/static/style.css">
-</head>
-
-<body class="auth-body">
-
-<div class="captcha-box">
-
-```
+{% extends "base.html" %}
+{% block content %}
+<div class="center-box">
 <h2>Human Verification</h2>
-<p>Solve the math to continue</p>
+<p>Solve: {{question}}</p>
 
-<div class="question">
-    {{ question }}
-</div>
-
-<form method="POST" action="/{{mode}}">
-    <input type="number" name="captcha" placeholder="Your Answer" required>
-    <button class="btn">Verify</button>
+<form method="POST">
+<input type="number" name="captcha" required>
+<button>Verify</button>
 </form>
-```
-
 </div>
-
-</body>
-</html>
+{% endblock %}

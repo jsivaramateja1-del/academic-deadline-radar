@@ -1,54 +1,35 @@
-<!DOCTYPE html>
+{% extends "base.html" %}
+{% block content %}
 
-<html>
-<head>
-    <title>Login - Academic Deadline Radar</title>
-    <link rel="stylesheet" href="/static/style.css">
-</head>
+<div class="center">
 
-<body class="auth-body">
+<div class="card">
+<h2>Academic Deadline Radar</h2>
 
-<div class="auth-container">
+<form method="POST">
 
-```
-<div class="auth-left">
-    <h1>Academic Deadline Radar</h1>
-    <p class="tag">Plan smarter. Study calmer.</p>
+<input name="username" placeholder="Username" required>
+<input type="password" name="password" placeholder="Password" required>
 
-    <ul class="features">
-        <li>📚 Track assignments & exams</li>
-        <li>⚡ Know what to start first</li>
-        <li>🧠 Reduce last-minute stress</li>
-    </ul>
+<div class="captcha">
+<span id="q">Loading...</span>
+<input name="captcha" placeholder="Answer" required>
 </div>
 
-<div class="auth-box">
+<button>Login</button>
+</form>
 
-    <h2>Login</h2>
-
-    {% with messages = get_flashed_messages() %}
-    {% if messages %}
-        <div class="error-box">
-            {{ messages[0] }}
-        </div>
-    {% endif %}
-    {% endwith %}
-
-    <form method="POST">
-        <input type="text" name="username" placeholder="Username" required>
-        <input type="password" name="password" placeholder="Password" required>
-
-        <button class="btn">Login</button>
-    </form>
-
-    <p class="switch">
-        New user? <a href="/register">Create account</a>
-    </p>
+<a href="/register">Create account</a>
 
 </div>
-```
-
 </div>
 
-</body>
-</html>
+<script>
+fetch("/captcha_question")
+.then(r=>r.json())
+.then(d=>{
+document.getElementById("q").innerText="Solve: "+d.q;
+});
+</script>
+
+{% endblock %}
