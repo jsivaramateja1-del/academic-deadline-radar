@@ -91,6 +91,8 @@ def login():
 def logout():
     session.pop('user', None)
     return redirect('/login')
+if not subject or not title or not deadline or not hours:
+    return redirect('/')
 
 
 # ---------------- ADD TASK ----------------
