@@ -42,3 +42,29 @@ button {
     color: white;
     border-radius: 5px;
 }
+.task-card{
+    padding:12px;
+    border-radius:10px;
+    width:340px;
+    margin-bottom:12px;
+    font-family: Arial;
+    box-shadow:0px 2px 8px rgba(0,0,0,0.2);
+}
+
+/* RED - urgent */
+.high{
+    background:#ffd6d6;
+    border-left:8px solid red;
+}
+
+/* ORANGE - medium */
+.medium{
+    background:#fff1c2;
+    border-left:8px solid orange;
+}
+
+/* GREEN - safe */
+.low{
+    background:#d6ffd9;
+    border-left:8px solid green;
+}

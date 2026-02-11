@@ -41,37 +41,34 @@
 
 <h2>All Tasks</h2>
 
-{% if tasks %}
-<ul>
-    {% for task in tasks %}
-    <li class="task-card">
-        <b>{{ task[1] }} - {{ task[2] }}</b><br>
-        Type: {{ task[3] }}<br>
-        Deadline: {{ task[4] }}<br>
-        Hours Needed: {{ task[5] }}
-    </li>
-    <br>
-    {% endfor %}
-</ul>
-{% else %}
-<p>No tasks added yet.</p>
-{% endif %}
+{% for t, days_left, priority in tasks %}
+<div class="task-card {{priority}}">
+    <b>{{t[1]}} - {{t[2]}}</b><br>
+    Type: {{t[3]}}<br>
+    Deadline: {{t[4]}}<br>
+    Hours Needed: {{t[5]}}<br>
+    Days Left: {{days_left}}
+</div>
+<br>
+{% endfor %}
+
 
 <hr>
 
 <h2>📊 Recommended Task To Start Now</h2>
 
 {% if recommended %}
-<div class="recommended-card">
-    <p><b>Subject:</b> {{ recommended[1] }}</p>
-    <p><b>Title:</b> {{ recommended[2] }}</p>
-    <p><b>Type:</b> {{ recommended[3] }}</p>
-    <p><b>Deadline:</b> {{ recommended[4] }}</p>
-    <p><b>Estimated Hours:</b> {{ recommended[5] }}</p>
+<div class="task-card high">
+    <b>{{recommended[0][1]}} - {{recommended[0][2]}}</b><br>
+    Type: {{recommended[0][3]}}<br>
+    Deadline: {{recommended[0][4]}}<br>
+    Estimated Hours: {{recommended[0][5]}}<br>
+    Days Left: {{recommended[1]}}
 </div>
 {% else %}
 <p>No recommendation yet. Add tasks first.</p>
 {% endif %}
+
 
 </body>
 </html>
