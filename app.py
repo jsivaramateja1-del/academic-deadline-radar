@@ -138,7 +138,26 @@ def home():
     c = conn.cursor()
 
     c.execute("SELECT * FROM tasks WHERE user=?", (session['user'],))
-    tasks = c.fetchall()
+    tasks_db = c.fetchall()
+    tasks = []
+
+    today = datetime.today()
+
+    for task in tasks_db:
+        deadline = datetime.strptime(task[5], "%Y-%m-%d")
+        days_left = (deadline - today).days
+
+        if days_left < 0:
+            color = "urgent"      # overdue → RED
+        elif days_left <= 2:
+            color = "danger"      # 1-2 days → ORANGE
+        elif days_left <= 5:
+            color = "warning"     # few days → YELLOW
+        else:
+            color = "safe"        # safe → GREEN
+
+        tasks.append(task + (days_left, color))
+
 
     # -------- Recommendation --------
     recommended = None
