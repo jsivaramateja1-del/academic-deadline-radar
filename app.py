@@ -3,7 +3,7 @@ import sqlite3
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = "academic-deadline-radar-secret"
+app.secret_key = "hackathon_secret_key_123"
 
 
 # ---------------- DATABASE ----------------
@@ -20,11 +20,11 @@ def init_db():
     )
     ''')
 
-    # TASKS TABLE
+    # TASKS TABLE (linked to user)
     c.execute('''
     CREATE TABLE IF NOT EXISTS tasks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
+        user TEXT,
         subject TEXT,
         title TEXT,
         task_type TEXT,
@@ -36,71 +36,67 @@ def init_db():
     conn.commit()
     conn.close()
 
+
 init_db()
 
-
 # ---------------- REGISTER ----------------
-@app.route('/register')
-def register_page():
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        conn = sqlite3.connect('tasks.db')
+        c = conn.cursor()
+
+        try:
+            c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
+            conn.commit()
+        except:
+            conn.close()
+            return "Username already exists!"
+
+        conn.close()
+        return redirect('/login')
+
     return render_template('register.html')
 
 
-@app.route('/register', methods=['POST'])
-def register():
-    username = request.form['username']
-    password = request.form['password']
-
-    conn = sqlite3.connect('tasks.db')
-    c = conn.cursor()
-
-    try:
-        c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
-        conn.commit()
-    except:
-        conn.close()
-        return "Username already exists. Go back and try another."
-
-    conn.close()
-    return redirect('/login')
-
-
 # ---------------- LOGIN ----------------
-@app.route('/login')
-def login_page():
-    return render_template('login.html')
-
-
-@app.route('/login', methods=['POST'])
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-    username = request.form['username']
-    password = request.form['password']
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
 
-    conn = sqlite3.connect('tasks.db')
-    c = conn.cursor()
+        conn = sqlite3.connect('tasks.db')
+        c = conn.cursor()
 
-    c.execute("SELECT * FROM users WHERE username=? AND password=?", (username, password))
-    user = c.fetchone()
-    conn.close()
+        c.execute("SELECT * FROM users WHERE username=? AND password=?", (username, password))
+        user = c.fetchone()
 
-    if user:
-        session['user_id'] = user[0]
-        session['username'] = user[1]
-        return redirect('/')
-    else:
-        return "Invalid username or password"
+        conn.close()
+
+        if user:
+            session['user'] = username
+            return redirect('/')
+        else:
+            return "Invalid username or password"
+
+    return render_template('login.html')
 
 
 # ---------------- LOGOUT ----------------
 @app.route('/logout')
 def logout():
-    session.clear()
+    session.pop('user', None)
     return redirect('/login')
 
 
 # ---------------- ADD TASK ----------------
 @app.route('/add', methods=['POST'])
 def add():
-    if 'user_id' not in session:
+    if 'user' not in session:
         return redirect('/login')
 
     subject = request.form['subject']
@@ -112,10 +108,10 @@ def add():
     conn = sqlite3.connect('tasks.db')
     c = conn.cursor()
 
-    c.execute("""
-    INSERT INTO tasks (user_id, subject, title, task_type, deadline, hours)
-    VALUES (?, ?, ?, ?, ?, ?)
-    """, (session['user_id'], subject, title, task_type, deadline, hours))
+    c.execute(
+        "INSERT INTO tasks (user, subject, title, task_type, deadline, hours) VALUES (?, ?, ?, ?, ?, ?)",
+        (session['user'], subject, title, task_type, deadline, hours)
+    )
 
     conn.commit()
     conn.close()
@@ -126,17 +122,16 @@ def add():
 # ---------------- HOME + RECOMMENDATION ----------------
 @app.route('/')
 def home():
-    if 'user_id' not in session:
+    if 'user' not in session:
         return redirect('/login')
 
     conn = sqlite3.connect('tasks.db')
     c = conn.cursor()
 
-    # ONLY CURRENT USER TASKS
-    c.execute("SELECT * FROM tasks WHERE user_id=?", (session['user_id'],))
+    c.execute("SELECT * FROM tasks WHERE user=?", (session['user'],))
     tasks = c.fetchall()
 
-    # RECOMMENDATION SYSTEM
+    # Recommendation algorithm
     recommended = None
     today = datetime.today()
     best_score = 999999
@@ -146,7 +141,6 @@ def home():
         days_left = (deadline - today).days
         hours = int(task[6])
 
-        # priority formula
         score = (days_left * 2) + hours
 
         if score < best_score:
@@ -158,7 +152,7 @@ def home():
     return render_template('index.html',
                            tasks=tasks,
                            recommended=recommended,
-                           username=session['username'])
+                           username=session['user'])
 
 
 # ---------------- RUN ----------------

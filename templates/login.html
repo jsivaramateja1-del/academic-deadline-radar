@@ -1,54 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Login - Academic Deadline Radar</title>
-    <style>
-        body{
-            font-family: Arial;
-            background:#f2f6ff;
-        }
-        .box{
-            width:350px;
-            margin:120px auto;
-            padding:25px;
-            background:white;
-            border-radius:10px;
-            box-shadow:0 0 10px rgba(0,0,0,0.15);
-            text-align:center;
-        }
-        input{
-            width:90%;
-            padding:10px;
-            margin:10px 0;
-        }
-        button{
-            padding:10px 20px;
-            background:#2f7df6;
-            color:white;
-            border:none;
-            border-radius:5px;
-            cursor:pointer;
-        }
-        a{
-            text-decoration:none;
-            color:#2f7df6;
-        }
-    </style>
+    <title>Login</title>
 </head>
-<body>
+<body style="font-family:Arial; background:#f0f2f5;">
 
-<div class="box">
-    <h2>Academic Deadline Radar</h2>
-    <h3>Login</h3>
+<h2>Login</h2>
 
-    <form method="POST" action="/login">
-        <input type="text" name="username" placeholder="Username" required><br>
-        <input type="password" name="password" placeholder="Password" required><br>
-        <button type="submit">Login</button>
-    </form>
+<form method="POST">
+    Username:<br>
+    <input type="text" name="username" required><br><br>
 
-    <p>New user? <a href="/register">Create account</a></p>
-</div>
+    Password:<br>
+    <input type="password" name="password" required><br><br>
+
+    <button type="submit">Login</button>
+</form>
+
+<p>New user? <a href="/register">Register here</a></p>
 
 </body>
 </html>
