@@ -2,22 +2,25 @@
 <html>
 <head>
     <title>Register</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body style="font-family:Arial; background:#f0f2f5;">
+<body>
 
-<h2>Create Account</h2>
+<div class="center-card">
+<h2>Register</h2>
+
+{% if error %}
+<p class="error">{{error}}</p>
+{% endif %}
 
 <form method="POST">
-    Username:<br>
-    <input type="text" name="username" required><br><br>
-
-    Password:<br>
-    <input type="password" name="password" required><br><br>
-
-    <button type="submit">Register</button>
+    <input type="text" name="username" placeholder="Choose Username" required>
+    <input type="password" name="password" placeholder="Choose Password" required>
+    <button type="submit">Create Account</button>
 </form>
 
-<p>Already have account? <a href="/login">Login</a></p>
+<p>Already have an account? <a href="/login">Login</a></p>
+</div>
 
 </body>
 </html>

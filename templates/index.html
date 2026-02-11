@@ -8,15 +8,20 @@
 <body>
 
 <div class="navbar">
-    <div><b>Academic Deadline Radar</b></div>
-    <div>
-        Welcome, <b>{{username}}</b>
-        &nbsp;&nbsp;
-        <a class="logout-btn" href="/logout">Logout</a>
+    Academic Deadline Radar
+    <div class="right">
+        Welcome, {{username}} |
+        <a href="/logout">Logout</a>
     </div>
 </div>
 
 <div class="container">
+
+<div class="card yellow">
+<h3>📅 Today's Academic Load</h3>
+<b>{{workload}}</b><br>
+You have approximately <b>{{today_hours}} hours</b> of work due soon.
+</div>
 
 <div class="card">
 <h2>Add Task</h2>
@@ -46,36 +51,34 @@
 </form>
 </div>
 
-
-<div class="card recommend">
-<h2>📊 Recommended Task To Start Now</h2>
+<div class="card red">
+<h3>📊 Recommended Task To Start Now</h3>
 
 {% if recommended %}
-<b>{{recommended[2]}} - {{recommended[3]}}</b><br>
-Type: {{recommended[4]}}<br>
-Deadline: {{recommended[5]}}<br>
-Estimated Hours: {{recommended[6]}}
+Subject: {{recommended[2]}} <br>
+Title: {{recommended[3]}} <br>
+Type: {{recommended[4]}} <br>
+Deadline: {{recommended[5]}} <br>
+Hours: {{recommended[6]}}
 {% else %}
-<p>No tasks yet.</p>
+No tasks yet.
 {% endif %}
 </div>
 
-
 <div class="card">
-<h2>All Tasks</h2>
+<h3>All Tasks</h3>
 
 {% for task in tasks %}
-<div class="task card">
-    <b>{{task[2]}} - {{task[3]}}</b><br>
-    Type: {{task[4]}}<br>
-    Deadline: {{task[5]}}<br>
-    Hours Needed: {{task[6]}}
-</div>
+<p>
+<b>{{task[2]}} - {{task[3]}}</b><br>
+Type: {{task[4]}}<br>
+Deadline: {{task[5]}}<br>
+Hours: {{task[6]}}
+</p>
+<hr>
 {% endfor %}
-
 </div>
 
 </div>
-
 </body>
 </html>

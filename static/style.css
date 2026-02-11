@@ -1,77 +1,68 @@
 body {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: Arial;
     background: #eef2f7;
     margin: 0;
 }
 
-/* Top Bar */
 .navbar {
-    background: #2f7df6;
+    background: #2f6fed;
     color: white;
-    padding: 15px 25px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.logout-btn {
-    background: #ff4d4d;
-    padding: 8px 14px;
-    color: white;
-    text-decoration: none;
-    border-radius: 6px;
+    padding: 15px;
     font-weight: bold;
 }
 
-/* Container */
+.navbar .right {
+    float: right;
+}
+
 .container {
     width: 70%;
     margin: auto;
-    margin-top: 25px;
+    margin-top: 30px;
 }
 
-/* Cards */
 .card {
     background: white;
-    padding: 18px;
-    margin-top: 15px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-/* Form */
+.yellow {
+    border-left: 6px solid orange;
+}
+
+.red {
+    border-left: 6px solid red;
+}
+
 input, select {
     width: 100%;
-    padding: 10px;
-    margin-top: 5px;
-    margin-bottom: 12px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
+    padding: 8px;
+    margin-top: 8px;
+    margin-bottom: 15px;
 }
 
 button {
-    background: #2f7df6;
+    background: #2f6fed;
     color: white;
+    padding: 10px;
     border: none;
-    padding: 12px;
     width: 100%;
-    border-radius: 8px;
-    font-size: 15px;
-    cursor: pointer;
+    border-radius: 5px;
 }
 
-button:hover {
-    background: #1e5fd1;
+.center-card {
+    width: 300px;
+    margin: auto;
+    margin-top: 100px;
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
 }
 
-/* Recommended Box */
-.recommend {
-    background: #ffe4e4;
-    border-left: 6px solid #ff4d4d;
-}
-
-/* Task card */
-.task {
-    background: #e8f0ff;
-    border-left: 6px solid #2f7df6;
+.error {
+    color: red;
+    font-weight: bold;
 }

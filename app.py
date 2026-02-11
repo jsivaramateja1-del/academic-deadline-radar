@@ -11,6 +11,7 @@ def init_db():
     conn = sqlite3.connect('tasks.db')
     c = conn.cursor()
 
+    # USERS TABLE
     c.execute('''
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -19,6 +20,7 @@ def init_db():
     )
     ''')
 
+    # TASKS TABLE
     c.execute('''
     CREATE TABLE IF NOT EXISTS tasks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,6 +42,8 @@ init_db()
 # ---------------- REGISTER ----------------
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    error = None
+
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -50,20 +54,18 @@ def register():
         try:
             c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
             conn.commit()
-        except:
             conn.close()
-            return "Username already exists!"
+            return redirect('/login')
+        except:
+            error = "Username already exists!"
+            conn.close()
 
-        conn.close()
-        return redirect('/login')
-
-    return render_template('register.html')
+    return render_template('register.html', error=error)
 
 
 # ---------------- LOGIN ----------------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-
     error = None
 
     if request.method == 'POST':
@@ -75,7 +77,6 @@ def login():
 
         c.execute("SELECT * FROM users WHERE username=? AND password=?", (username, password))
         user = c.fetchone()
-
         conn.close()
 
         if user:
@@ -85,7 +86,6 @@ def login():
             error = "Invalid username or password"
 
     return render_template('login.html', error=error)
-
 
 
 # ---------------- LOGOUT ----------------
@@ -107,7 +107,6 @@ def add():
     deadline = request.form['deadline']
     hours = request.form['hours']
 
-    # form validation
     if not subject or not title or not deadline or not hours:
         return redirect('/')
 
@@ -125,7 +124,7 @@ def add():
     return redirect('/')
 
 
-# ---------------- HOME + RECOMMENDATION ----------------
+# ---------------- HOME ----------------
 @app.route('/')
 def home():
     if 'user' not in session:
@@ -137,6 +136,7 @@ def home():
     c.execute("SELECT * FROM tasks WHERE user=?", (session['user'],))
     tasks = c.fetchall()
 
+    # -------- Recommendation --------
     recommended = None
     today = datetime.today()
     best_score = 999999
@@ -146,7 +146,6 @@ def home():
         days_left = (deadline - today).days
         hours = int(task[6])
 
-        # overdue priority
         if days_left < 0:
             score = -100
         else:
@@ -156,14 +155,36 @@ def home():
             best_score = score
             recommended = task
 
+    # -------- Workload Meter --------
+    today_hours = 0
+    for task in tasks:
+        deadline = datetime.strptime(task[5], "%Y-%m-%d")
+        days_left = (deadline - today).days
+        hours = int(task[6])
+
+        if days_left <= 2:
+            today_hours += hours
+
+    if today_hours == 0:
+        workload = "Free Day 😌"
+    elif today_hours <= 3:
+        workload = "Light Work 📗"
+    elif today_hours <= 6:
+        workload = "Busy Day 📙"
+    else:
+        workload = "Overloaded 🚨"
+
     conn.close()
 
-    return render_template('index.html',
-                           tasks=tasks,
-                           recommended=recommended,
-                           username=session['user'])
+    return render_template(
+        'index.html',
+        tasks=tasks,
+        recommended=recommended,
+        username=session['user'],
+        workload=workload,
+        today_hours=today_hours
+    )
 
 
-# ---------------- RUN ----------------
 if __name__ == '__main__':
     app.run(debug=True)
