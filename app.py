@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import Flask, render_template, request, redirect
 import sqlite3
 
@@ -34,7 +35,31 @@ def home():
     tasks = c.fetchall()
     conn.close()
 
-    return render_template('index.html', tasks=tasks)
+    today = datetime.today()
+    prioritized_task = None
+    highest_score = -1
+
+    for task in tasks:
+        deadline_str = task[4]  # deadline column
+        hours = int(task[5])
+
+        try:
+            deadline_date = datetime.strptime(deadline_str, "%Y-%m-%d")
+            days_left = (deadline_date - today).days
+
+            if days_left <= 0:
+                days_left = 1
+
+            score = hours / days_left
+
+            if score > highest_score:
+                highest_score = score
+                prioritized_task = task
+
+        except:
+            continue
+
+    return render_template('index.html', tasks=tasks, prioritized_task=prioritized_task)
 
 
 # ---------- ADD TASK ----------

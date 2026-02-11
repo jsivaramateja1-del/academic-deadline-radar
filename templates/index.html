@@ -36,3 +36,13 @@ Estimated Hours Required:<br>
     </li>
 {% endfor %}
 </ul>
+{% if prioritized_task %}
+<h2>📊 Recommended Task To Start Now</h2>
+<div style="border:2px solid red; padding:15px; width:400px;">
+    <b>Subject:</b> {{ prioritized_task[1] }} <br>
+    <b>Title:</b> {{ prioritized_task[2] }} <br>
+    <b>Type:</b> {{ prioritized_task[3] }} <br>
+    <b>Deadline:</b> {{ prioritized_task[4] }} <br>
+    <b>Estimated Hours:</b> {{ prioritized_task[5] }}
+</div>
+{% endif %}
