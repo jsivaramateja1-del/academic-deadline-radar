@@ -1,0 +1,44 @@
+body {
+    font-family: Arial;
+    margin: 40px;
+    background: #f4f6f8;
+}
+
+h1, h2 {
+    color: #222;
+}
+
+.task {
+    padding: 12px;
+    border-radius: 10px;
+    width: 350px;
+    color: white;
+    font-weight: bold;
+}
+
+/* Urgency colors */
+.red {
+    background: #e74c3c;
+}
+
+.orange {
+    background: #f39c12;
+}
+
+.green {
+    background: #2ecc71;
+}
+
+input, select {
+    padding: 6px;
+    margin: 5px 0;
+    width: 220px;
+}
+
+button {
+    padding: 8px 15px;
+    background: #3498db;
+    border: none;
+    color: white;
+    border-radius: 5px;
+}
