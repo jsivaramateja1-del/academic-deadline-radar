@@ -72,13 +72,15 @@
         <h2>All Tasks</h2>
 
         {% for task in tasks %}
-            <div class="task upcoming">
-                <b>{{ task[2] }}</b> - {{ task[3] }} <br>
-                Type: {{ task[4] }} <br>
-                Deadline: {{ task[5] }} <br>
-                Hours: {{ task[6] }}
+            <div class="task {{task[8]}}">
+                <b>{{task[2]}} - {{task[3]}}</b><br>
+                Type: {{task[4]}}<br>
+                Deadline: {{task[5]}}<br>
+                Hours: {{task[6]}}<br>
+                Days Left: {{task[7]}}
             </div>
         {% endfor %}
+
     </div>
 
 </div>
