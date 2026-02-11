@@ -1,157 +1,115 @@
-*{
-    box-sizing:border-box;
-    font-family:Segoe UI, Arial;
-}
-
 body{
     margin:0;
+    font-family: 'Segoe UI', sans-serif;
+    background:#0f172a;
+    color:white;
 }
 
-/* ---------- AUTH PAGES ---------- */
+/* AUTH PAGES */
 
 .auth-bg{
-    height:100vh;
-    background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
     display:flex;
     justify-content:center;
     align-items:center;
+    height:100vh;
+    background:linear-gradient(135deg,#0f172a,#1e293b,#334155);
 }
 
-.auth-container{
-    width:900px;
-    display:flex;
-    gap:40px;
+.auth-box{
+    background:#111827;
+    padding:40px;
+    border-radius:18px;
+    width:350px;
+    box-shadow:0 0 30px rgba(0,0,0,0.5);
+    animation:pop 0.5s ease;
 }
 
-.auth-left{
-    color:white;
-    width:50%;
-    animation:fadeSlide 1s ease;
-}
-
-.auth-left h1{
-    font-size:40px;
-}
-
-.tagline{
-    opacity:0.8;
+.auth-box h2{
+    text-align:center;
     margin-bottom:20px;
 }
 
-.auth-card{
-    background:white;
-    padding:35px;
-    border-radius:14px;
-    width:350px;
-    box-shadow:0 10px 30px rgba(0,0,0,0.3);
-    animation:pop 0.6s ease;
-}
-
-.auth-card input{
+.auth-box input{
     width:100%;
     padding:12px;
-    margin:8px 0 18px 0;
-    border-radius:8px;
-    border:1px solid #ccc;
+    margin:10px 0;
+    border-radius:10px;
+    border:none;
+    outline:none;
+    background:#1f2937;
+    color:white;
     transition:0.3s;
 }
 
-.auth-card input:focus{
-    border-color:#2c5364;
-    transform:scale(1.03);
-    outline:none;
+.auth-box input:focus{
+    transform:scale(1.05);
+    background:#374151;
 }
 
 .btn{
     width:100%;
     padding:12px;
     border:none;
-    border-radius:8px;
-    background:linear-gradient(135deg,#36d1dc,#5b86e5);
-    color:white;
-    font-size:16px;
+    border-radius:12px;
+    background:linear-gradient(90deg,#22c55e,#4ade80);
+    color:black;
+    font-weight:bold;
     cursor:pointer;
     transition:0.3s;
 }
 
 .btn:hover{
-    transform:translateY(-2px);
+    transform:scale(1.05);
 }
 
-.error{
-    background:#ffdddd;
-    color:#900;
-    padding:10px;
-    border-radius:6px;
-    margin-bottom:15px;
-}
+/* DASHBOARD */
 
-.switch{
-    text-align:center;
-    margin-top:15px;
-}
-
-/* ---------- DASHBOARD ---------- */
-
-.dashboard-bg{
-    background:#0b1a2b;
-    min-height:100vh;
-    color:white;
-}
-
-.navbar{
-    background:#08121f;
-    padding:15px 30px;
-    display:flex;
-    justify-content:space-between;
-}
-
-.main{
-    padding:40px 80px;
+.container{
+    width:80%;
+    margin:auto;
+    margin-top:40px;
 }
 
 .card{
-    background:#13263d;
-    padding:25px;
-    border-radius:14px;
-    margin-bottom:30px;
+    background:#1f2937;
+    padding:20px;
+    border-radius:16px;
+    margin-bottom:25px;
 }
 
-.add-card input,
-.add-card select{
-    width:100%;
-    padding:12px;
-    margin:10px 0;
-    border-radius:8px;
-    border:none;
-}
-
-.tasks{
+.task-grid{
     display:flex;
-    flex-wrap:wrap;
     gap:20px;
+    flex-wrap:wrap;
 }
 
-.task-card{
-    width:230px;
+.task{
+    width:250px;
     padding:18px;
-    border-radius:12px;
-    animation:fadeSlide 0.6s ease;
+    border-radius:14px;
+    color:black;
+    animation:fade 0.6s ease;
 }
 
-/* urgency colors */
-.green{ background:#2ecc71;}
-.yellow{ background:#f1c40f;}
-.orange{ background:#e67e22;}
-.red{ background:#e74c3c;}
-
-/* animations */
-@keyframes fadeSlide{
-    from{opacity:0; transform:translateY(20px);}
-    to{opacity:1; transform:translateY(0);}
-}
+.red{background:#ef4444;}
+.orange{background:#fb923c;}
+.yellow{background:#fde047;}
+.green{background:#4ade80;}
 
 @keyframes pop{
-    from{transform:scale(0.8); opacity:0;}
-    to{transform:scale(1); opacity:1;}
+    from{transform:scale(0.6);opacity:0;}
+    to{transform:scale(1);opacity:1;}
+}
+
+@keyframes fade{
+    from{opacity:0;transform:translateY(30px);}
+    to{opacity:1;transform:translateY(0);}
+}
+
+.flash{
+    background:#ef4444;
+    padding:10px;
+    border-radius:10px;
+    margin-bottom:10px;
+    text-align:center;
 }

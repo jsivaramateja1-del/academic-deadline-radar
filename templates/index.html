@@ -1,68 +1,57 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Dashboard - Academic Deadline Radar</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<title>Dashboard</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
-<body class="dashboard-bg">
+<body>
 
-<div class="navbar">
-    <div class="logo">Academic Deadline Radar</div>
-    <div class="user">
-        Welcome, {{ username }} |
-        <a href="/logout">Logout</a>
-    </div>
+<div class="container">
+
+<h1>Welcome, {{ username }}</h1>
+<a href="/logout">Logout</a>
+
+<div class="card">
+<h2>Add Task</h2>
+
+<form method="POST" action="/add">
+<input name="subject" placeholder="Subject" required>
+<input name="title" placeholder="Task Title" required>
+
+<select name="task_type">
+<option>Assignment</option>
+<option>Exam</option>
+<option>Lab</option>
+<option>Project</option>
+<option>Quiz</option>
+</select>
+
+<input type="date" name="deadline" required>
+<input type="number" name="hours" placeholder="Estimated Hours" min="0" required>
+
+<button class="btn">Add Task</button>
+</form>
 </div>
 
-<div class="main">
+<div class="card">
+<h2>All Tasks</h2>
 
-    <div class="card add-card">
-        <h2>Add Task</h2>
+<div class="task-grid">
 
-        {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            <div class="error">{{ messages[0] }}</div>
-        {% endif %}
-        {% endwith %}
-
-        <form method="POST" action="/add">
-
-            <input name="subject" placeholder="Subject" required>
-
-            <input name="title" placeholder="Task Title" required>
-
-            <select name="task_type">
-                <option>Assignment</option>
-                <option>Exam</option>
-                <option>Lab</option>
-                <option>Project</option>
-                <option>Presentation</option>
-            </select>
-
-            <input type="date" name="deadline" required>
-
-            <input type="number" name="hours" min="0" placeholder="Estimated Hours" required>
-
-            <button class="btn">Add Task</button>
-        </form>
-    </div>
-
-    <h2 class="section">All Tasks</h2>
-
-    <div class="tasks">
-        {% for task, days_left, color in tasks %}
-        <div class="task-card {{ color }}">
-            <h3>{{ task[2] }} - {{ task[3] }}</h3>
-            <p>Type: {{ task[4] }}</p>
-            <p>Deadline: {{ task[5] }}</p>
-            <p>Days Left: {{ days_left }}</p>
-            <p>Hours: {{ task[6] }}</p>
-        </div>
-        {% endfor %}
-    </div>
+{% for task,days,color in tasks %}
+<div class="task {{color}}">
+<h3>{{task[2]}} - {{task[3]}}</h3>
+<p>Type: {{task[4]}}</p>
+<p>Deadline: {{task[5]}}</p>
+<p>Days Left: {{days}}</p>
+<p>Hours: {{task[6]}}</p>
+</div>
+{% endfor %}
 
 </div>
+</div>
 
+</div>
 </body>
 </html>
