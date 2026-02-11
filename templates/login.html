@@ -1,67 +1,37 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Academic Deadline Radar | Smart Study Planner</title>
+    <title>Login - Academic Deadline Radar</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
-<body style="background:linear-gradient(120deg,#2563eb,#4f46e5); color:white;">
+<body class="auth-body">
 
-<div style="display:flex; height:100vh; align-items:center; justify-content:center; gap:80px;">
+<div class="auth-wrapper">
 
-    <!-- LEFT SIDE (Title + Explanation) -->
-    <div style="max-width:420px;">
-        <h1 style="font-size:40px; font-weight:600;">
-            Academic Deadline Radar
-        </h1>
-
-        <p style="margin-top:20px; font-size:18px; line-height:1.6;">
-            A smart academic planner that analyzes your assignments, exams, and projects
-            and recommends what you should start first based on urgency and effort.
-        </p>
-
-        <ul style="margin-top:25px; line-height:1.8;">
-            <li>✔ Tracks all academic tasks</li>
-            <li>✔ Suggests the most important work</li>
-            <li>✔ Predicts your workload</li>
-            <li>✔ Helps avoid last-minute stress</li>
-        </ul>
+    <div class="hero">
+        <h1>Academic Deadline Radar</h1>
+        <p>Smartly decide what to study today.</p>
     </div>
 
-    <!-- RIGHT SIDE (Login Box) -->
-    <div class="auth-box" style="color:black;">
+    <form class="card" method="POST">
 
-        <h2 style="text-align:center;">Login</h2>
+        <h2>Login</h2>
 
         {% if error %}
-        <div style="
-            background:#fee2e2;
-            color:#b91c1c;
-            padding:10px;
-            border-radius:6px;
-            margin-bottom:15px;
-            text-align:center;">
-            {{ error }}
-        </div>
+        <div class="error">{{ error }}</div>
         {% endif %}
 
-        <form method="POST">
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
 
-            <label>Username</label>
-            <input type="text" name="username" required>
+        <button>Login</button>
 
-            <label>Password</label>
-            <input type="password" name="password" required>
-
-            <button type="submit">Login</button>
-
-        </form>
-
-        <div class="auth-link">
+        <p class="switch">
             New user? <a href="/register">Create account</a>
-        </div>
+        </p>
 
-    </div>
+    </form>
 
 </div>
 

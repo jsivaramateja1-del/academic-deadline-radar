@@ -1,86 +1,54 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Academic Deadline Radar</title>
+    <title>Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
 </head>
+
 <body>
 
-<div class="navbar">
-    <div class="logo">📚 Academic Deadline Radar</div>
-    <div>
-        Welcome, {{ username }} 
-        <a class="logout-btn" href="/logout">Logout</a>
-    </div>
-</div>
+<header class="topbar">
+    <div>Academic Deadline Radar</div>
+    <div>Welcome, {{ username }} | <a href="/logout">Logout</a></div>
+</header>
 
 <div class="container">
 
-    <!-- STATUS CARD -->
-    <div class="card status">
-        <div>
-            <h2>Today's Academic Load</h2>
-            {% if recommended %}
-                <p class="danger">You should start: <b>{{ recommended[3] }}</b></p>
-            {% else %}
-                <p class="safe">You are free today 🎉</p>
-            {% endif %}
-        </div>
-        <div style="font-size:48px;">
-            {% if recommended %}⚠️{% else %}😌{% endif %}
-        </div>
-    </div>
-
-    <!-- ADD TASK -->
-    <div class="card">
+    <div class="task-form">
         <h2>Add Task</h2>
+
         <form action="/add" method="POST">
 
-            <label>Subject</label>
-            <input name="subject" required>
+            <input name="subject" placeholder="Subject" required>
+            <input name="title" placeholder="Task Title" required>
 
-            <label>Task Title</label>
-            <input name="title" required>
+            <select name="task_type">
+                <option>Assignment</option>
+                <option>Exam</option>
+                <option>Project</option>
+                <option>Quiz</option>
+            </select>
 
-            <label>Type</label>
-            <input name="task_type" placeholder="Task Type (Assignment / Exam / Project / Lab / Quiz)" required>
-
-
-            <label>Deadline</label>
             <input type="date" name="deadline" required>
+            <input type="number" min="0" name="hours" placeholder="Estimated Hours" required>
 
-            <label>Estimated Hours</label>
-            <input type="number" name="hours" required>
-
-            <button class="add-btn">Add Task</button>
+            <button>Add Task</button>
         </form>
     </div>
 
-    <!-- RECOMMENDED -->
-    {% if recommended %}
-    <div class="card">
-        <h2>Recommended Task To Start Now</h2>
-        <div class="task recommend">
-            <b>{{ recommended[2] }}</b> - {{ recommended[3] }} <br>
-            Due: {{ recommended[5] }} | Hours: {{ recommended[6] }}
+    <h2>All Tasks</h2>
+
+    <div class="tasks">
+        {% for task,days,color in tasks %}
+        <div class="task-card {{color}}">
+            <h3>{{task[2]}} - {{task[3]}}</h3>
+            <p>Type: {{task[4]}}</p>
+            <p>Deadline: {{task[5]}}</p>
+            <p>Days Left: {{days}}</p>
+            <p>Hours: {{task[6]}}</p>
         </div>
-    </div>
-    {% endif %}
-
-    <!-- ALL TASKS -->
-    <div class="card">
-        <h2>All Tasks</h2>
-
-        {% for task in tasks %}
-            <div class="task {{task[8]}}">
-                <b>{{task[2]}} - {{task[3]}}</b><br>
-                Type: {{task[4]}}<br>
-                Deadline: {{task[5]}}<br>
-                Hours: {{task[6]}}<br>
-                Days Left: {{task[7]}}
-            </div>
         {% endfor %}
-
     </div>
 
 </div>
