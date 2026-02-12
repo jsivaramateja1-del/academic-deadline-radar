@@ -102,6 +102,14 @@ academic-deadline-radar/
 
 ---
 
+## Screenshots
+
+- Login page ![alt text](login.png)
+- Register page  ![alt text](register.png)
+- Dashboard ![alt text](dashboard.png)
+- Task color priority system ![alt text](task.png)
+
+---
 ## Team
 
 - Siva Rama Teja
