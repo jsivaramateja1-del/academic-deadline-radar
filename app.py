@@ -269,7 +269,11 @@ def send_otp_email(email, otp, purpose):
 
             def send_async(application, message):
                 with application.app_context():
-                    mail.send(message)
+                    try:
+                        mail.send(message)
+                        print("[Mail] Sent successfully!")
+                    except Exception as e:
+                        print(f"[Mail Thread Error] {type(e).__name__}: {e}")
 
             t = threading.Thread(target=send_async, args=(app, msg))
             t.daemon = True
