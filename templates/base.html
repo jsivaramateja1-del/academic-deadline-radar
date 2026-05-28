@@ -1,25 +1,22 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Academic Deadline Radar</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-<script defer src="{{ url_for('static', filename='script.js') }}"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Academic Deadline Radar</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-
 <body>
 
-{% with messages = get_flashed_messages() %}
-{% if messages %}
-<div class="flash">
-{% for m in messages %}
-<p>{{m}}</p>
-{% endfor %}
-</div>
-{% endif %}
-{% endwith %}
+  <!-- Background blobs -->
+  <div class="blob-wrap">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
 
-{% block content %}{% endblock %}
+  {% block content %}{% endblock %}
 
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>

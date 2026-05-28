@@ -1,34 +1,71 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>Login</title>
-<link rel="stylesheet" href="/static/style.css">
-</head>
-<body class="bg">
+{% extends "base.html" %}
+{% block content %}
 
-<div class="card">
-<h2>Academic Deadline Radar</h2>
+<div class="auth-page">
+  <div class="auth-split">
 
-{% with messages = get_flashed_messages() %}
-{% if messages %}
-<div class="error">{{messages[0]}}</div>
-{% endif %}
-{% endwith %}
+    <!-- Left decorative panel -->
+    <div class="auth-panel">
+      <span class="panel-logo">🎯</span>
+      <div class="panel-title">Never miss a deadline again.</div>
+      <p class="panel-sub">
+        Track every assignment, exam, lab and project —
+        ranked by urgency so you always know what to do first.
+      </p>
+      <div class="panel-dots">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
 
-<form method="POST">
+    <!-- Right form panel -->
+    <div class="auth-form-panel">
+      <h2>Welcome back 👋</h2>
+      <p class="auth-subtitle">Sign in to your student dashboard</p>
 
-<input name="username" placeholder="Username" required>
-<input name="password" type="password" placeholder="Password" required>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">
+              {% if category == 'error' %}⚠️
+              {% elif category == 'success' %}✅
+              {% else %}💡{% endif %}
+              {{ message }}
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
 
-<p>Solve: {{question}}</p>
-<input name="answer" placeholder="Answer" required>
+      <form method="POST" action="/login">
 
-<button type="submit">Login</button>
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <div class="input-row">
+            <span class="ico">✉️</span>
+            <input id="email" type="email" name="email"
+                   placeholder="you@email.com" required autocomplete="email">
+          </div>
+        </div>
 
-</form>
+        <div class="form-group">
+          <label for="pass">Password</label>
+          <div class="input-row">
+            <span class="ico">🔒</span>
+            <input id="pass" type="password" name="password"
+                   placeholder="Your password" required autocomplete="current-password">
+            <button type="button" class="pw-toggle">👁</button>
+          </div>
+        </div>
 
-<a href="/register" class="link">Create account</a>
+        <button type="submit" class="btn-main">Continue →</button>
+      </form>
+
+      <div class="auth-links">
+        <a href="/forgot-password">Forgot your password?</a>
+        <a href="/register">No account yet? <b>Create one free</b></a>
+      </div>
+    </div>
+
+  </div>
 </div>
 
-</body>
-</html>
+{% endblock %}

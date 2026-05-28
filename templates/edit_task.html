@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="auth-page">
+  <div class="auth-split">
+
+    <div class="auth-panel">
+      <span class="panel-logo">✏️</span>
+      <div class="panel-title">Edit your task</div>
+      <p class="panel-sub">
+        Update the details, deadline or estimated hours
+        and re-sort your priorities instantly.
+      </p>
+      <div class="panel-dots">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <div class="auth-form-panel">
+      <h2>Edit Task ✏️</h2>
+      <p class="auth-subtitle">Make changes and save</p>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">
+              {% if category == 'error' %}⚠️
+              {% elif category == 'success' %}✅
+              {% else %}💡{% endif %}
+              {{ message }}
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" action="/edit_task/{{ task.id }}">
+
+        <div class="form-group">
+          <label for="subject">Subject</label>
+          <div class="input-row">
+            <span class="ico">📚</span>
+            <input id="subject" type="text" name="subject"
+                   value="{{ task.subject }}" placeholder="e.g. Mathematics" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="title">Task Title</label>
+          <div class="input-row">
+            <span class="ico">📝</span>
+            <input id="title" type="text" name="title"
+                   value="{{ task.title }}" placeholder="e.g. Chapter 5 Assignment" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="type">Task Type</label>
+          <div class="input-row" style="padding-left:0">
+            <select id="type" name="type" style="padding-left:14px">
+              <option value="Assignment" {% if task.type == 'Assignment' %}selected{% endif %}>📝 Assignment</option>
+              <option value="Exam"       {% if task.type == 'Exam'       %}selected{% endif %}>📖 Exam</option>
+              <option value="Lab"        {% if task.type == 'Lab'        %}selected{% endif %}>🧪 Lab</option>
+              <option value="Project"    {% if task.type == 'Project'    %}selected{% endif %}>🏗️ Project</option>
+              <option value="Quiz"       {% if task.type == 'Quiz'       %}selected{% endif %}>❓ Quiz</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="deadline">Deadline</label>
+          <div class="input-row">
+            <span class="ico">📅</span>
+            <input id="deadline" type="date" name="deadline"
+                   value="{{ task.deadline }}" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="hours">Estimated Hours</label>
+          <div class="input-row">
+            <span class="ico">⏱️</span>
+            <input id="hours" type="number" name="hours"
+                   value="{{ task.hours }}" min="0" placeholder="e.g. 3" required>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-main">Save Changes →</button>
+      </form>
+
+      <div class="auth-links">
+        <a href="/dashboard">← Back to dashboard</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

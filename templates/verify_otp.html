@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="auth-page">
+  <div class="otp-card">
+
+    <div class="otp-icon">🔐</div>
+
+    <h2>
+      {% if purpose == 'register' %}Verify your email
+      {% elif purpose == 'login' %}Two-step login
+      {% else %}Reset password{% endif %}
+    </h2>
+
+    <p class="otp-hint">
+      We sent a 6-digit code to<br>
+      <strong>{{ email }}</strong>
+    </p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">
+            {% if category == 'error' %}⚠️
+            {% elif category == 'success' %}✅
+            {% else %}💡{% endif %}
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="/verify-otp" id="otp-form">
+      <div class="otp-boxes">
+        <input type="text" name="d1" maxlength="1" inputmode="numeric"
+               pattern="[0-9]" title="OTP digit 1" placeholder="0"
+               aria-label="OTP digit 1" required>
+        <input type="text" name="d2" maxlength="1" inputmode="numeric"
+               pattern="[0-9]" title="OTP digit 2" placeholder="0"
+               aria-label="OTP digit 2" required>
+        <input type="text" name="d3" maxlength="1" inputmode="numeric"
+               pattern="[0-9]" title="OTP digit 3" placeholder="0"
+               aria-label="OTP digit 3" required>
+        <input type="text" name="d4" maxlength="1" inputmode="numeric"
+               pattern="[0-9]" title="OTP digit 4" placeholder="0"
+               aria-label="OTP digit 4" required>
+        <input type="text" name="d5" maxlength="1" inputmode="numeric"
+               pattern="[0-9]" title="OTP digit 5" placeholder="0"
+               aria-label="OTP digit 5" required>
+        <input type="text" name="d6" maxlength="1" inputmode="numeric"
+               pattern="[0-9]" title="OTP digit 6" placeholder="0"
+               aria-label="OTP digit 6" required>
+      </div>
+
+      <button type="submit" class="btn-main">Verify →</button>
+    </form>
+
+    <div class="otp-timer-row">
+      Expires in <span id="countdown">1:00</span>
+    </div>
+
+    <a href="/resend-otp" class="resend-btn">🔄 Resend OTP</a>
+
+    <div class="otp-back">
+      <a href="/login">← Back to login</a>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

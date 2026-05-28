@@ -1,53 +1,159 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>Dashboard</title>
-<link rel="stylesheet" href="/static/style.css">
-</head>
-<body class="dark">
+{% extends "base.html" %}
+{% block content %}
 
-<div class="topbar">
-Welcome {{username}} | <a href="/logout">Logout</a>
+<div class="dash-page">
+
+  <nav class="topbar">
+    <div class="tb-brand">
+      <div class="tb-logo">🎯</div>
+      <span class="tb-name">Deadline Radar</span>
+    </div>
+    <div class="tb-right">
+      <div class="user-chip">
+        <div class="av">{{ email[0].upper() }}</div>
+        {{ email.split('@')[0] }}
+      </div>
+      <a href="/logout" class="logout-link">Sign out</a>
+    </div>
+  </nav>
+
+  <div class="dash-body">
+
+    <div class="greeting">
+      <h1>Hey <span>{{ email.split('@')[0] }}</span> 👋</h1>
+      <p>Here's your deadline tracker — sorted by urgency.</p>
+    </div>
+
+    {% set total  = tasks | length %}
+    {% set urgent = tasks | selectattr('color','in',['overdue','urgent']) | list | length %}
+    {% set soon   = tasks | selectattr('color','equalto','high') | list | length %}
+    {% set safe   = tasks | selectattr('color','equalto','safe') | list | length %}
+
+    <div class="stat-chips">
+      <div class="stat-chip c-all">
+        <div class="chip-val">{{ total }}</div>
+        <div>Total tasks</div>
+      </div>
+      <div class="stat-chip c-red">
+        <div class="chip-val">{{ urgent }}</div>
+        <div>Urgent / overdue</div>
+      </div>
+      <div class="stat-chip c-orange">
+        <div class="chip-val">{{ soon }}</div>
+        <div>Due in 3 days</div>
+      </div>
+      <div class="stat-chip c-green">
+        <div class="chip-val">{{ safe }}</div>
+        <div>Safe</div>
+      </div>
+    </div>
+
+    <div class="dash-grid">
+
+      <div class="add-card">
+        <div class="card-head">
+          <div class="ch-ico">➕</div>
+          <h3>Add New Task</h3>
+        </div>
+
+        <form action="/add_task" method="POST" class="add-form">
+
+          <label for="f-subject">Subject</label>
+          <input id="f-subject" name="subject"
+                 placeholder="e.g. Mathematics" title="Subject" required>
+
+          <label for="f-title">Task Title</label>
+          <input id="f-title" name="title"
+                 placeholder="e.g. Chapter 5 Assignment" title="Task title" required>
+
+          <label for="f-type">Task Type</label>
+          <select id="f-type" name="type" title="Task type" aria-label="Task type">
+            <option value="Assignment">📝 Assignment</option>
+            <option value="Exam">📖 Exam</option>
+            <option value="Lab">🧪 Lab</option>
+            <option value="Project">🏗️ Project</option>
+            <option value="Quiz">❓ Quiz</option>
+          </select>
+
+          <label for="f-deadline">Deadline</label>
+          <input id="f-deadline" name="deadline"
+                 type="date" title="Deadline date" required>
+
+          <label for="f-hours">Estimated Hours</label>
+          <input id="f-hours" name="hours"
+                 type="number" min="0"
+                 placeholder="e.g. 3"
+                 title="Estimated study hours" required>
+
+          <button type="submit" class="btn-add">+ Add Task</button>
+        </form>
+      </div>
+
+      <div class="tasks-card">
+        <div class="tasks-card-head">
+          <h3>
+            Your Tasks
+            <span class="badge-count">{{ total }}</span>
+          </h3>
+          <span class="sub">sorted by urgency</span>
+        </div>
+
+        <div class="task-list">
+          {% if tasks %}
+            {% for t in tasks %}
+            <div class="task-row">
+              <div class="task-strip {{ t.color }}"></div>
+
+              <div class="task-type-ico t-{{ t.type | lower }}">
+                {% if t.type == 'Assignment' %}📝
+                {% elif t.type == 'Exam' %}📖
+                {% elif t.type == 'Lab' %}🧪
+                {% elif t.type == 'Project' %}🏗️
+                {% else %}❓{% endif %}
+              </div>
+
+              <div class="task-info">
+                <div class="task-title-txt">{{ t.title }}</div>
+                <div class="task-sub-txt">{{ t.subject }} · {{ t.deadline }}</div>
+              </div>
+
+              <div class="task-metas">
+                <span class="meta-pill days {{ t.color }}">
+                  {% if t.days_left < 0 %}
+                    {{ t.days_left | abs }}d overdue
+                  {% elif t.days_left == 0 %}
+                    Due today!
+                  {% else %}
+                    {{ t.days_left }}d left
+                  {% endif %}
+                </span>
+                <span class="meta-pill hrs">{{ t.hours }}h</span>
+              </div>
+
+              <a href="/edit_task/{{ t.id }}"
+                 class="task-edit"
+                 title="Edit task">✏️</a>
+
+              <a href="/delete_task/{{ t.id }}"
+                 class="task-del"
+                 title="Delete task"
+                 onclick="return confirm('Delete this task?')">🗑</a>
+            </div>
+            {% endfor %}
+
+          {% else %}
+            <div class="empty-box">
+              <span class="ei">📭</span>
+              <h4>No tasks yet</h4>
+              <p>Add your first task using the form on the left.<br>
+                 Start with what's due soonest!</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+  </div>
 </div>
 
-<div class="taskbox">
-
-<h2>Add Task</h2>
-
-<form action="/add_task" method="POST">
-<input name="subject" placeholder="Subject" required>
-<input name="title" placeholder="Task Title" required>
-
-<select name="type">
-<option>Assignment</option>
-<option>Exam</option>
-<option>Lab</option>
-<option>Project</option>
-</select>
-
-<input name="deadline" type="date" required>
-<input name="hours" type="number" min="0" placeholder="Estimated Hours" required>
-
-<button>Add Task</button>
-</form>
-
-</div>
-
-<h2>Your Tasks</h2>
-
-<div class="tasks">
-
-{% for t in tasks %}
-<div class="task {{t.color}}">
-<b>{{t.subject}} - {{t.title}}</b><br>
-Type: {{t.type}}<br>
-Deadline: {{t.deadline}}<br>
-Days Left: {{t.days_left}}<br>
-Hours: {{t.hours}}
-</div>
-{% endfor %}
-
-</div>
-
-</body>
-</html>
+{% endblock %}
