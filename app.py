@@ -1,6 +1,7 @@
 import os
 from flask import Flask, render_template, request, redirect, session, flash, g
-import sqlite3
+import psycopg2
+import psycopg2.extras
 import random
 import string
 from datetime import datetime, timedelta
@@ -21,6 +22,7 @@ app.secret_key = os.environ.get("SECRET_KEY", "fallback_dev_key_change_in_produc
 app.config['MAIL_SERVER']         = 'smtp.gmail.com'
 app.config['MAIL_PORT']           = 587
 app.config['MAIL_USE_TLS']        = True
+app.config['MAIL_TIMEOUT']        = 5
 app.config['MAIL_USERNAME']       = os.environ.get('MAIL_USERNAME', '')
 app.config['MAIL_PASSWORD']       = os.environ.get('MAIL_PASSWORD', '')
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', '')
@@ -28,11 +30,14 @@ app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', '')
 if MAIL_AVAILABLE:
     mail = Mail(app)
 
+DATABASE_URL = os.environ.get('DATABASE_URL', '')
+
 
 def get_db():
     if 'db' not in g:
-        g.db = sqlite3.connect("database.db")
-        g.db.row_factory = sqlite3.Row
+        conn = psycopg2.connect(DATABASE_URL)
+        conn.autocommit = False
+        g.db = conn
     return g.db
 
 @app.teardown_appcontext
@@ -42,11 +47,11 @@ def close_db(error):
         db.close()
 
 def init_db():
-    conn = sqlite3.connect("database.db")
+    conn = psycopg2.connect(DATABASE_URL)
     c = conn.cursor()
     c.execute("""
         CREATE TABLE IF NOT EXISTS users (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            id          SERIAL PRIMARY KEY,
             email       TEXT UNIQUE,
             password    TEXT,
             is_verified INTEGER DEFAULT 0,
@@ -54,7 +59,7 @@ def init_db():
         )""")
     c.execute("""
         CREATE TABLE IF NOT EXISTS otps (
-            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            id         SERIAL PRIMARY KEY,
             email      TEXT,
             otp        TEXT,
             purpose    TEXT,
@@ -63,7 +68,7 @@ def init_db():
         )""")
     c.execute("""
         CREATE TABLE IF NOT EXISTS tasks (
-            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            id         SERIAL PRIMARY KEY,
             email      TEXT,
             subject    TEXT,
             title      TEXT,
@@ -83,28 +88,31 @@ def generate_otp():
 
 def save_otp(email, otp, purpose):
     db = get_db()
-    db.execute(
-        "UPDATE otps SET used=1 WHERE email=? AND purpose=? AND used=0",
+    c  = db.cursor()
+    c.execute(
+        "UPDATE otps SET used=1 WHERE email=%s AND purpose=%s AND used=0",
         (email, purpose)
     )
     expires = (datetime.now() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
-    db.execute(
-        "INSERT INTO otps(email,otp,purpose,expires_at,used) VALUES(?,?,?,?,0)",
+    c.execute(
+        "INSERT INTO otps(email,otp,purpose,expires_at,used) VALUES(%s,%s,%s,%s,0)",
         (email, otp, purpose, expires)
     )
     db.commit()
 
 def verify_otp_code(email, otp, purpose):
     db  = get_db()
+    c   = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    row = db.execute(
+    c.execute(
         """SELECT id FROM otps
-           WHERE email=? AND otp=? AND purpose=?
-             AND used=0 AND expires_at > ?""",
+           WHERE email=%s AND otp=%s AND purpose=%s
+             AND used=0 AND expires_at > %s""",
         (email, otp, purpose, now)
-    ).fetchone()
+    )
+    row = c.fetchone()
     if row:
-        db.execute("UPDATE otps SET used=1 WHERE id=?", (row["id"],))
+        c.execute("UPDATE otps SET used=1 WHERE id=%s", (row["id"],))
         db.commit()
     return row is not None
 
@@ -131,7 +139,7 @@ def send_otp_email(email, otp, purpose):
                 body=body
             ))
             return True
-        except Exception as e:
+        except BaseException as e:
             print(f"[Mail Error] {e}")
     return False
 
@@ -151,10 +159,10 @@ def register():
             flash("Password must be at least 6 characters.", "error")
             return redirect('/register')
 
-        db       = get_db()
-        existing = db.execute(
-            "SELECT id, is_verified FROM users WHERE email=?", (email,)
-        ).fetchone()
+        db = get_db()
+        c  = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        c.execute("SELECT id, is_verified FROM users WHERE email=%s", (email,))
+        existing = c.fetchone()
 
         if existing and existing['is_verified'] == 1:
             flash("Email already registered. Please login.", "error")
@@ -162,13 +170,13 @@ def register():
 
         hashed = generate_password_hash(password)
         if not existing:
-            db.execute(
-                "INSERT INTO users(email,password,is_verified) VALUES(?,?,0)",
+            c.execute(
+                "INSERT INTO users(email,password,is_verified) VALUES(%s,%s,0)",
                 (email, hashed)
             )
         else:
-            db.execute(
-                "UPDATE users SET password=? WHERE email=?", (hashed, email)
+            c.execute(
+                "UPDATE users SET password=%s WHERE email=%s", (hashed, email)
             )
         db.commit()
 
@@ -181,7 +189,7 @@ def register():
 
         flash(
             f"OTP sent to {email}. Check your inbox." if sent
-            else f"OTP: {otp}  (email not configured — see console)",
+            else f"OTP: {otp}  (check Render logs)",
             "success" if sent else "info"
         )
         return redirect('/verify-otp')
@@ -197,10 +205,10 @@ def login():
         email    = request.form['email'].strip().lower()
         password = request.form['password']
 
-        db   = get_db()
-        user = db.execute(
-            "SELECT password, is_verified FROM users WHERE email=?", (email,)
-        ).fetchone()
+        db = get_db()
+        c  = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        c.execute("SELECT password, is_verified FROM users WHERE email=%s", (email,))
+        user = c.fetchone()
 
         if not user or not check_password_hash(user['password'], password):
             flash("Incorrect email or password.", "error")
@@ -221,7 +229,7 @@ def login():
 
         flash(
             f"OTP sent to {email}." if sent
-            else f"OTP: {otp}  (see console)",
+            else f"OTP: {otp}  (check Render logs)",
             "success" if sent else "info"
         )
         return redirect('/verify-otp')
@@ -242,10 +250,10 @@ def verify_otp():
 
         if verify_otp_code(email, otp, purpose):
             if purpose == 'register':
-                get_db().execute(
-                    "UPDATE users SET is_verified=1 WHERE email=?", (email,)
-                )
-                get_db().commit()
+                db = get_db()
+                c  = db.cursor()
+                c.execute("UPDATE users SET is_verified=1 WHERE email=%s", (email,))
+                db.commit()
                 session.pop('otp_email',   None)
                 session.pop('otp_purpose', None)
                 flash("Email verified! Please login.", "success")
@@ -280,7 +288,7 @@ def resend_otp():
 
     flash(
         "New OTP sent to your email." if sent
-        else f"New OTP: {otp}  (see console)",
+        else f"New OTP: {otp}  (check Render logs)",
         "success" if sent else "info"
     )
     return redirect('/verify-otp')
@@ -291,9 +299,9 @@ def forgot_password():
     if request.method == 'POST':
         email = request.form['email'].strip().lower()
         db    = get_db()
-        user  = db.execute(
-            "SELECT id FROM users WHERE email=? AND is_verified=1", (email,)
-        ).fetchone()
+        c     = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        c.execute("SELECT id FROM users WHERE email=%s AND is_verified=1", (email,))
+        user  = c.fetchone()
 
         if not user:
             flash("No verified account found with this email.", "error")
@@ -308,7 +316,7 @@ def forgot_password():
 
         flash(
             f"Reset OTP sent to {email}." if sent
-            else f"OTP: {otp}  (see console)",
+            else f"OTP: {otp}  (check Render logs)",
             "success" if sent else "info"
         )
         return redirect('/verify-otp')
@@ -333,8 +341,9 @@ def reset_password():
             return redirect('/reset-password')
 
         db = get_db()
-        db.execute(
-            "UPDATE users SET password=? WHERE email=?",
+        c  = db.cursor()
+        c.execute(
+            "UPDATE users SET password=%s WHERE email=%s",
             (generate_password_hash(password), email)
         )
         db.commit()
@@ -350,12 +359,13 @@ def dashboard():
     if 'user' not in session:
         return redirect('/login')
 
-    db   = get_db()
-    rows = db.execute(
-        "SELECT * FROM tasks WHERE email=? ORDER BY deadline ASC",
+    db = get_db()
+    c  = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    c.execute(
+        "SELECT * FROM tasks WHERE email=%s ORDER BY deadline ASC",
         (session['user'],)
-    ).fetchall()
-
+    )
+    rows  = c.fetchall()
     tasks = []
     today = datetime.now().date()
 
@@ -406,8 +416,9 @@ def add_task():
         hours = 0
 
     db = get_db()
-    db.execute(
-        "INSERT INTO tasks(email,subject,title,type,deadline,hours) VALUES(?,?,?,?,?,?)",
+    c  = db.cursor()
+    c.execute(
+        "INSERT INTO tasks(email,subject,title,type,deadline,hours) VALUES(%s,%s,%s,%s,%s,%s)",
         (session['user'], subject, title, type_, deadline, hours)
     )
     db.commit()
@@ -419,11 +430,10 @@ def edit_task(task_id):
     if 'user' not in session:
         return redirect('/login')
 
-    db   = get_db()
-    task = db.execute(
-        "SELECT * FROM tasks WHERE id=? AND email=?",
-        (task_id, session['user'])
-    ).fetchone()
+    db = get_db()
+    c  = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    c.execute("SELECT * FROM tasks WHERE id=%s AND email=%s", (task_id, session['user']))
+    task = c.fetchone()
 
     if not task:
         flash("Task not found.", "error")
@@ -439,9 +449,9 @@ def edit_task(task_id):
         except ValueError:
             hours = 0
 
-        db.execute(
-            """UPDATE tasks SET subject=?, title=?, type=?, deadline=?, hours=?
-               WHERE id=? AND email=?""",
+        c.execute(
+            """UPDATE tasks SET subject=%s, title=%s, type=%s, deadline=%s, hours=%s
+               WHERE id=%s AND email=%s""",
             (subject, title, type_, deadline, hours, task_id, session['user'])
         )
         db.commit()
@@ -457,10 +467,8 @@ def delete_task(task_id):
         return redirect('/login')
 
     db = get_db()
-    db.execute(
-        "DELETE FROM tasks WHERE id=? AND email=?",
-        (task_id, session['user'])
-    )
+    c  = db.cursor()
+    c.execute("DELETE FROM tasks WHERE id=%s AND email=%s", (task_id, session['user']))
     db.commit()
     return redirect('/dashboard')
 
