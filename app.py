@@ -15,8 +15,8 @@ import requests
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "fallback_dev_key_change_in_production")
 
-RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
-MAIL_FROM      = os.environ.get('MAIL_FROM', 'onboarding@resend.dev')
+BREVO_API_KEY = os.environ.get('BREVO_API_KEY', '')
+MAIL_FROM     = os.environ.get('MAIL_FROM', 'aistudyhub8@gmail.com')
 
 DATABASE_URL = os.environ.get('DATABASE_URL', '')
 
@@ -245,28 +245,28 @@ def send_otp_email(email, otp, purpose):
 
     print(f"\n{'='*50}\n  OTP [{purpose.upper()}] for {email}: {otp}\n{'='*50}\n")
 
-    if RESEND_API_KEY:
+    if BREVO_API_KEY:
         try:
             response = requests.post(
-                'https://api.resend.com/emails',
+                'https://api.brevo.com/v3/smtp/email',
                 headers={
-                    'Authorization': f'Bearer {RESEND_API_KEY}',
+                    'api-key': BREVO_API_KEY,
                     'Content-Type': 'application/json'
                 },
                 json={
-                    'from': MAIL_FROM,
-                    'to': [email],
+                    'sender': {'name': 'Academic Deadline Radar', 'email': MAIL_FROM},
+                    'to': [{'email': email}],
                     'subject': cfg['subject'],
-                    'html': html_body,
-                    'text': plain_body
+                    'htmlContent': html_body,
+                    'textContent': plain_body
                 },
                 timeout=30
             )
             if response.status_code in (200, 201):
-                print("[Mail] Sent successfully via Resend!")
+                print("[Mail] Sent successfully via Brevo!")
                 return True
             else:
-                print(f"[Mail Error] Resend: {response.status_code} {response.text}")
+                print(f"[Mail Error] Brevo: {response.status_code} {response.text}")
         except Exception as e:
             print(f"[Mail Error] {e}")
     return False
