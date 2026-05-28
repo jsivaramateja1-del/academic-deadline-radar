@@ -10,26 +10,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-try:
-    from flask_mail import Mail, Message
-    MAIL_AVAILABLE = True
-except ImportError:
-    MAIL_AVAILABLE = False
+import requests
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "fallback_dev_key_change_in_production")
 
-app.config['MAIL_SERVER']         = 'smtp.gmail.com'
-app.config['MAIL_PORT']    = 465
-app.config['MAIL_USE_TLS'] = False
-app.config['MAIL_USE_SSL'] = True
-app.config['MAIL_TIMEOUT']        = 180
-app.config['MAIL_USERNAME']       = os.environ.get('MAIL_USERNAME', '')
-app.config['MAIL_PASSWORD']       = os.environ.get('MAIL_PASSWORD', '')
-app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', '')
-
-if MAIL_AVAILABLE:
-    mail = Mail(app)
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
+MAIL_FROM      = os.environ.get('MAIL_FROM', 'onboarding@resend.dev')
 
 DATABASE_URL = os.environ.get('DATABASE_URL', '')
 
@@ -258,29 +245,29 @@ def send_otp_email(email, otp, purpose):
 
     print(f"\n{'='*50}\n  OTP [{purpose.upper()}] for {email}: {otp}\n{'='*50}\n")
 
-    if MAIL_AVAILABLE and app.config['MAIL_USERNAME']:
+    if RESEND_API_KEY:
         try:
-            import threading
-            msg = Message(
-                subject=cfg['subject'],
-                recipients=[email]
+            response = requests.post(
+                'https://api.resend.com/emails',
+                headers={
+                    'Authorization': f'Bearer {RESEND_API_KEY}',
+                    'Content-Type': 'application/json'
+                },
+                json={
+                    'from': MAIL_FROM,
+                    'to': [email],
+                    'subject': cfg['subject'],
+                    'html': html_body,
+                    'text': plain_body
+                },
+                timeout=30
             )
-            msg.body = plain_body
-            msg.html = html_body
-
-            def send_async(application, message):
-                with application.app_context():
-                    try:
-                        mail.send(message)
-                        print("[Mail] Sent successfully!")
-                    except Exception as e:
-                        print(f"[Mail Thread Error] {type(e).__name__}: {e}")
-
-            t = threading.Thread(target=send_async, args=(app, msg))
-            t.daemon = True
-            t.start()
-            return True
-        except BaseException as e:
+            if response.status_code in (200, 201):
+                print("[Mail] Sent successfully via Resend!")
+                return True
+            else:
+                print(f"[Mail Error] Resend: {response.status_code} {response.text}")
+        except Exception as e:
             print(f"[Mail Error] {e}")
     return False
 

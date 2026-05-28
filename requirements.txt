@@ -1,6 +1,6 @@
 flask
 werkzeug
-flask-mail
 python-dotenv
 gunicorn
 psycopg2-binary
+requests
