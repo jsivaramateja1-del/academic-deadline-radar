@@ -149,89 +149,117 @@ def send_otp_email(email, otp, purpose):
         'cta': 'Enter this code to continue:'
     })
 
-    html_body = f"""
-<!DOCTYPE html>
+    # ── OTP digits split for individual boxes ──────────────────────────
+    d = list(otp)
+    digit_box = (
+        "background:#111111;border:1px solid #b8860b;border-radius:6px;"
+        "display:inline-block;width:40px;height:52px;line-height:52px;"
+        "text-align:center;font-size:26px;font-weight:700;color:#ffd700;"
+        "font-family:'Courier New',monospace;margin:0 3px;vertical-align:middle;"
+    )
+    separator = (
+        "display:inline-block;width:12px;text-align:center;"
+        "color:#4a3800;font-size:20px;vertical-align:middle;"
+    )
+    digits_html = (
+        f'<span style="{digit_box}">{d[0]}</span>'
+        f'<span style="{digit_box}">{d[1]}</span>'
+        f'<span style="{digit_box}">{d[2]}</span>'
+        f'<span style="{separator}">&#xb7;</span>'
+        f'<span style="{digit_box}">{d[3]}</span>'
+        f'<span style="{digit_box}">{d[4]}</span>'
+        f'<span style="{digit_box}">{d[5]}</span>'
+    )
+
+    html_body = f"""<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{cfg['label']}</title>
+  <title>{cfg['label']} — Academic Deadline Radar</title>
 </head>
-<body style="margin:0;padding:0;background:#f4f4f5;font-family:'Segoe UI',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0;">
-    <tr>
-      <td align="center">
-        <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+<body style="margin:0;padding:0;background:#111111;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#111111;padding:36px 0;">
+  <tr>
+    <td align="center">
+      <table width="540" cellpadding="0" cellspacing="0"
+             style="background:#0a0a0a;border-radius:12px;overflow:hidden;border:1px solid #2a2a2a;max-width:540px;">
 
-          <!-- Header -->
-          <tr>
-            <td style="background:{cfg['color']};padding:36px 40px 28px;text-align:center;">
-              <div style="font-size:40px;margin-bottom:12px;">{cfg['icon']}</div>
-              <h1 style="margin:0;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;">
-                {cfg['headline']}
-              </h1>
-              <p style="margin:10px 0 0;font-size:14px;color:rgba(255,255,255,0.85);line-height:1.5;">
-                {cfg['subtext']}
-              </p>
-            </td>
-          </tr>
+        <!-- Gold top bar -->
+        <tr>
+          <td style="height:3px;background:linear-gradient(90deg,#111,#b8860b,#ffd700,#b8860b,#111);font-size:0;line-height:0;">&nbsp;</td>
+        </tr>
 
-          <!-- OTP Box -->
-          <tr>
-            <td style="padding:36px 40px 28px;text-align:center;">
-              <p style="margin:0 0 20px;font-size:14px;color:#6b7280;">{cfg['cta']}</p>
+        <!-- Header -->
+        <tr>
+          <td style="background:#0a0a0a;padding:32px 40px 24px;text-align:center;border-bottom:1px solid #1a1400;">
+            <p style="margin:0 0 4px;font-size:10px;letter-spacing:4px;color:#6b5c00;text-transform:uppercase;">Academic</p>
+            <p style="margin:0 0 4px;font-size:22px;font-weight:700;color:#ffd700;letter-spacing:1px;">Deadline Radar</p>
+            <p style="margin:0;font-size:10px;letter-spacing:3px;color:#4a3800;text-transform:uppercase;">Never miss a deadline</p>
+          </td>
+        </tr>
 
-              <div style="background:{cfg['light']};border:2px dashed {cfg['color']};border-radius:12px;padding:24px;display:inline-block;width:100%;box-sizing:border-box;">
-                <div style="font-size:42px;font-weight:800;letter-spacing:14px;color:{cfg['color']};font-family:'Courier New',monospace;">
-                  {otp}
-                </div>
-              </div>
+        <!-- Body -->
+        <tr>
+          <td style="padding:32px 40px 24px;">
+            <p style="margin:0 0 8px;font-size:16px;font-weight:600;color:#c8a000;">{cfg['headline']}</p>
+            <p style="margin:0 0 28px;font-size:14px;color:#888888;line-height:1.7;">{cfg['subtext']}</p>
 
-              <p style="margin:18px 0 0;font-size:13px;color:#9ca3af;">
-                ⏳ This code expires in <strong style="color:#374151;">10 minutes</strong>
-              </p>
-            </td>
-          </tr>
+            <!-- OTP label -->
+            <p style="margin:0 0 12px;font-size:10px;letter-spacing:3px;color:#6b5000;text-transform:uppercase;text-align:center;">{cfg['cta']}</p>
 
-          <!-- Divider -->
-          <tr>
-            <td style="padding:0 40px;">
-              <div style="border-top:1px solid #f0f0f0;"></div>
-            </td>
-          </tr>
+            <!-- OTP digits -->
+            <div style="text-align:center;margin:0 0 20px;">
+              {digits_html}
+            </div>
 
-          <!-- Warning -->
-          <tr>
-            <td style="padding:24px 40px;background:#fafafa;border-radius:0 0 16px 16px;">
-              <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td style="font-size:13px;color:#6b7280;line-height:1.6;">
-                    <strong style="color:#374151;">🛡️ Didn't request this?</strong><br>
-                    If you didn't request this code, you can safely ignore this email.
-                    Your account is secure — no action needed.
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
+            <!-- Expiry notice -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
+              <tr>
+                <td style="background:#0f0d00;border:1px solid #2a1800;border-radius:8px;padding:12px 16px;">
+                  <table cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="width:28px;vertical-align:middle;">
+                        <div style="width:26px;height:26px;border-radius:50%;background:#1a1400;border:1px solid #b8860b;text-align:center;line-height:26px;font-size:13px;">&#128336;</div>
+                      </td>
+                      <td style="padding-left:10px;font-size:13px;color:#8a7000;vertical-align:middle;">
+                        This code expires in <strong style="color:#c8a000;">10 minutes</strong>. Do not share it with anyone.
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
 
-          <!-- Footer -->
-          <tr>
-            <td style="padding:20px 40px;text-align:center;border-top:1px solid #f0f0f0;">
-              <p style="margin:0;font-size:12px;color:#9ca3af;">
-                Sent with ❤️ by <strong style="color:#6b7280;">Academic Deadline Radar</strong><br>
-                Never miss a deadline again.
-              </p>
-            </td>
-          </tr>
+            <!-- Thin gold divider -->
+            <div style="height:1px;background:linear-gradient(90deg,#111,#2a1800,#111);margin:0 0 20px;"></div>
 
-        </table>
-      </td>
-    </tr>
-  </table>
+            <!-- Security note -->
+            <p style="margin:0;font-size:12px;color:#555555;line-height:1.7;padding-left:12px;border-left:2px solid #2a1800;">
+              {cfg['security_note']}
+            </p>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background:#050500;padding:18px 40px;text-align:center;border-top:1px solid #1a1400;">
+            <p style="margin:0 0 4px;font-size:11px;letter-spacing:2px;color:#4a3800;text-transform:uppercase;">Academic Deadline Radar</p>
+            <p style="margin:0;font-size:11px;color:#333333;">automated message — please do not reply</p>
+          </td>
+        </tr>
+
+        <!-- Gold bottom bar -->
+        <tr>
+          <td style="height:2px;background:linear-gradient(90deg,#111,#b8860b,#ffd700,#b8860b,#111);font-size:0;line-height:0;">&nbsp;</td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
 </body>
-</html>
-"""
+</html>"""
 
     plain_body = (
         f"Academic Deadline Radar — {cfg['label']}\n\n"
