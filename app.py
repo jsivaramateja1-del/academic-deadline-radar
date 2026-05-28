@@ -114,7 +114,8 @@ def send_otp_email(email, otp, purpose):
             'color': '#4F46E5',
             'light': '#EEF2FF',
             'icon': '📬',
-            'cta': 'Use this code to complete your registration:'
+            'cta': 'Use this code to complete your registration:',
+            'security_note': 'If you did not create an account with Academic Deadline Radar, you can safely ignore this email.'
         },
         'login': {
             'label': 'Login Verification',
@@ -124,7 +125,8 @@ def send_otp_email(email, otp, purpose):
             'color': '#0891B2',
             'light': '#ECFEFF',
             'icon': '🚀',
-            'cta': 'Enter this code to access your account:'
+            'cta': 'Enter this code to access your account:',
+            'security_note': 'If you did not attempt to log in, your password may be compromised. Consider changing it immediately.'
         },
         'forgot': {
             'label': 'Password Reset',
@@ -134,7 +136,8 @@ def send_otp_email(email, otp, purpose):
             'color': '#D97706',
             'light': '#FFFBEB',
             'icon': '🔓',
-            'cta': 'Use this code to reset your password:'
+            'cta': 'Use this code to reset your password:',
+            'security_note': 'If you did not request a password reset, ignore this email. Your password will not change unless you use this code.'
         },
     }
 
@@ -146,7 +149,8 @@ def send_otp_email(email, otp, purpose):
         'color': '#4F46E5',
         'light': '#EEF2FF',
         'icon': '✉️',
-        'cta': 'Enter this code to continue:'
+        'cta': 'Enter this code to continue:',
+        'security_note': 'If you did not request this code, please ignore this email.'
     })
 
     # ── OTP digits split for individual boxes ──────────────────────────
@@ -366,8 +370,11 @@ def login():
         c.execute("SELECT password, is_verified FROM users WHERE email=%s", (email,))
         user = c.fetchone()
 
-        if not user or not check_password_hash(user['password'], password):
-            flash("Incorrect email or password.", "error")
+        if not user:
+            flash("No account found with this email.", "error")
+            return redirect('/login')
+        if not check_password_hash(user['password'], password):
+            flash("Incorrect password.", "error")
             return redirect('/login')
 
         if not user['is_verified']:
