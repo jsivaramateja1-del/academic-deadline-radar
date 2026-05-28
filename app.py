@@ -117,27 +117,155 @@ def verify_otp_code(email, otp, purpose):
     return row is not None
 
 def send_otp_email(email, otp, purpose):
-    labels = {
-        'register': 'Email Verification',
-        'login':    'Login Verification',
-        'forgot':   'Password Reset'
+    configs = {
+        'register': {
+            'label': 'Email Verification',
+            'subject': '🎓 Verify your Academic Deadline Radar account',
+            'headline': 'Welcome aboard! One last step.',
+            'subtext': "You're almost in! Verify your email to start tracking your deadlines.",
+            'color': '#4F46E5',
+            'light': '#EEF2FF',
+            'icon': '📬',
+            'cta': 'Use this code to complete your registration:'
+        },
+        'login': {
+            'label': 'Login Verification',
+            'subject': '🔐 Your Academic Deadline Radar login code',
+            'headline': 'Someone (hopefully you!) is signing in.',
+            'subtext': "Your one-time login code is ready. It expires in 10 minutes.",
+            'color': '#0891B2',
+            'light': '#ECFEFF',
+            'icon': '🚀',
+            'cta': 'Enter this code to access your account:'
+        },
+        'forgot': {
+            'label': 'Password Reset',
+            'subject': '🔑 Reset your Academic Deadline Radar password',
+            'headline': "Forgot your password? No worries.",
+            'subtext': "It happens to the best of us. Use the code below to reset your password.",
+            'color': '#D97706',
+            'light': '#FFFBEB',
+            'icon': '🔓',
+            'cta': 'Use this code to reset your password:'
+        },
     }
-    label = labels.get(purpose, 'Verification')
-    body  = (
-        f"Academic Deadline Radar — {label}\n\n"
-        f"Your OTP is: {otp}\n\n"
+
+    cfg = configs.get(purpose, {
+        'label': 'Verification',
+        'subject': 'Your Academic Deadline Radar OTP',
+        'headline': 'Your verification code is here.',
+        'subtext': 'Use the code below to continue.',
+        'color': '#4F46E5',
+        'light': '#EEF2FF',
+        'icon': '✉️',
+        'cta': 'Enter this code to continue:'
+    })
+
+    html_body = f"""
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{cfg['label']}</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:{cfg['color']};padding:36px 40px 28px;text-align:center;">
+              <div style="font-size:40px;margin-bottom:12px;">{cfg['icon']}</div>
+              <h1 style="margin:0;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;">
+                {cfg['headline']}
+              </h1>
+              <p style="margin:10px 0 0;font-size:14px;color:rgba(255,255,255,0.85);line-height:1.5;">
+                {cfg['subtext']}
+              </p>
+            </td>
+          </tr>
+
+          <!-- OTP Box -->
+          <tr>
+            <td style="padding:36px 40px 28px;text-align:center;">
+              <p style="margin:0 0 20px;font-size:14px;color:#6b7280;">{cfg['cta']}</p>
+
+              <div style="background:{cfg['light']};border:2px dashed {cfg['color']};border-radius:12px;padding:24px;display:inline-block;width:100%;box-sizing:border-box;">
+                <div style="font-size:42px;font-weight:800;letter-spacing:14px;color:{cfg['color']};font-family:'Courier New',monospace;">
+                  {otp}
+                </div>
+              </div>
+
+              <p style="margin:18px 0 0;font-size:13px;color:#9ca3af;">
+                ⏳ This code expires in <strong style="color:#374151;">10 minutes</strong>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding:0 40px;">
+              <div style="border-top:1px solid #f0f0f0;"></div>
+            </td>
+          </tr>
+
+          <!-- Warning -->
+          <tr>
+            <td style="padding:24px 40px;background:#fafafa;border-radius:0 0 16px 16px;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="font-size:13px;color:#6b7280;line-height:1.6;">
+                    <strong style="color:#374151;">🛡️ Didn't request this?</strong><br>
+                    If you didn't request this code, you can safely ignore this email.
+                    Your account is secure — no action needed.
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 40px;text-align:center;border-top:1px solid #f0f0f0;">
+              <p style="margin:0;font-size:12px;color:#9ca3af;">
+                Sent with ❤️ by <strong style="color:#6b7280;">Academic Deadline Radar</strong><br>
+                Never miss a deadline again.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+"""
+
+    plain_body = (
+        f"Academic Deadline Radar — {cfg['label']}\n\n"
+        f"{cfg['headline']}\n"
+        f"{cfg['subtext']}\n\n"
+        f"Your OTP: {otp}\n\n"
         f"This code expires in 10 minutes.\n"
-        f"If you did not request this, ignore this email.\n\n"
+        f"If you didn't request this, ignore this email.\n\n"
         f"— Academic Deadline Radar Team"
     )
+
     print(f"\n{'='*50}\n  OTP [{purpose.upper()}] for {email}: {otp}\n{'='*50}\n")
+
     if MAIL_AVAILABLE and app.config['MAIL_USERNAME']:
         try:
-            mail.send(Message(
-                subject=f"Your {label} OTP — Academic Deadline Radar",
-                recipients=[email],
-                body=body
-            ))
+            msg = Message(
+                subject=cfg['subject'],
+                recipients=[email]
+            )
+            msg.body = plain_body
+            msg.html = html_body
+            mail.send(msg)
             return True
         except BaseException as e:
             print(f"[Mail Error] {e}")
