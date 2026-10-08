@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Sign In — Academic Deadline Radar{% endblock %}
+{% block content %}
+
+<div class="auth-page">
+  <div class="auth-wrap">
+
+    <div class="auth-brand">
+      <div class="brand-icon">🎯</div>
+      <h1 class="brand-name">Deadline Radar</h1>
+      <p class="brand-tag">Never miss what matters.</p>
+    </div>
+
+    <div class="auth-card">
+      <h2>Welcome back</h2>
+      <p class="auth-sub">Sign in to your student dashboard</p>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}{% for cat, msg in messages %}
+          <div class="flash flash-{{ cat }}" role="alert">
+            <span class="flash-icon">{% if cat == 'error' %}⚠️{% elif cat == 'success' %}✅{% else %}💡{% endif %}</span>
+            {{ msg }}
+          </div>
+        {% endfor %}{% endif %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('login') }}" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="field">
+          <label for="email">Email address</label>
+          <input id="email" type="email" name="email"
+                 placeholder="you@university.edu"
+                 required autocomplete="email" autofocus>
+        </div>
+
+        <div class="field">
+          <label for="pass">Password</label>
+          <div class="pw-wrap">
+            <input id="pass" type="password" name="password"
+                   placeholder="Your password"
+                   required autocomplete="current-password">
+            <button type="button" class="pw-toggle" aria-label="Show password">
+              <span class="eye-icon">👁</span>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary" id="submit-btn">
+          <span class="btn-text">Continue</span>
+          <span class="btn-arrow">→</span>
+          <span class="btn-spinner" hidden>⏳</span>
+        </button>
+      </form>
+
+      <div class="auth-links">
+        <a href="{{ url_for('forgot_password') }}">Forgot password?</a>
+        <a href="{{ url_for('register') }}">No account? <b>Create one free</b></a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

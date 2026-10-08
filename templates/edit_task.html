@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Edit Task — Academic Deadline Radar{% endblock %}
+{% block content %}
+
+<div class="auth-page">
+  <div class="auth-wrap">
+
+    <div class="auth-brand">
+      <div class="brand-icon">🎯</div>
+      <h1 class="brand-name">Deadline Radar</h1>
+    </div>
+
+    <div class="auth-card edit-card">
+      <h2>Edit task ✏️</h2>
+      <p class="auth-sub">Update details and save</p>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}{% for cat, msg in messages %}
+          <div class="flash flash-{{ cat }}" role="alert">
+            <span class="flash-icon">{% if cat == 'error' %}⚠️{% elif cat == 'success' %}✅{% else %}💡{% endif %}</span>
+            {{ msg }}
+          </div>
+        {% endfor %}{% endif %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('edit_task', task_id=task.id) }}" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="field">
+          <label for="subject">Subject</label>
+          <input id="subject" type="text" name="subject"
+                 value="{{ task.subject }}" maxlength="80" required autofocus>
+        </div>
+
+        <div class="field">
+          <label for="title">Task title</label>
+          <input id="title" type="text" name="title"
+                 value="{{ task.title }}" maxlength="120" required>
+        </div>
+
+        <div class="field">
+          <label for="type">Type</label>
+          <select id="type" name="type">
+            {% for t in task_types %}
+            <option value="{{ t }}" {% if task.type == t %}selected{% endif %}>
+              {% if t == 'Assignment' %}📝
+              {% elif t == 'Exam' %}📖
+              {% elif t == 'Lab' %}🧪
+              {% elif t == 'Project' %}🏗️
+              {% else %}❓{% endif %}
+              {{ t }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="deadline">Date</label>
+            <input id="deadline" type="date" name="deadline"
+                   value="{{ task.deadline }}" required>
+          </div>
+          <div class="field">
+            <label for="deadline_time">Time <span class="opt">(optional)</span></label>
+            <input id="deadline_time" type="time" name="deadline_time"
+                   value="{{ task.deadline_time }}">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="hours">Estimated hours</label>
+          <input id="hours" type="number" name="hours"
+                 value="{{ task.hours }}" min="1" max="200" required>
+        </div>
+
+        <div class="field">
+          <label for="notes">Notes <span class="opt">(optional)</span></label>
+          <textarea id="notes" name="notes"
+                    maxlength="500" rows="3">{{ task.notes }}</textarea>
+        </div>
+
+        <button type="submit" class="btn-primary">Save changes →</button>
+      </form>
+
+      <div class="auth-links">
+        <a href="{{ url_for('dashboard') }}">← Back to dashboard</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

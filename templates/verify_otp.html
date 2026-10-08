@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Verify Code — Academic Deadline Radar{% endblock %}
+{% block content %}
+
+<div class="auth-page">
+  <div class="auth-wrap">
+
+    <div class="auth-brand">
+      <div class="brand-icon">🎯</div>
+      <h1 class="brand-name">Deadline Radar</h1>
+    </div>
+
+    <div class="auth-card otp-card">
+      <div class="otp-icon" aria-hidden="true">🔐</div>
+
+      <h2>
+        {% if purpose == 'register' %}Verify your email
+        {% elif purpose == 'login' %}Two-step sign-in
+        {% else %}Reset your password{% endif %}
+      </h2>
+
+      <p class="otp-hint">
+        We sent a 6-digit code to<br>
+        <strong>{{ email }}</strong>
+      </p>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}{% for cat, msg in messages %}
+          <div class="flash flash-{{ cat }}" role="alert">
+            <span class="flash-icon">{% if cat == 'error' %}⚠️{% elif cat == 'success' %}✅{% else %}💡{% endif %}</span>
+            {{ msg }}
+          </div>
+        {% endfor %}{% endif %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('verify_otp') }}" id="otp-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="otp-boxes" role="group" aria-label="Enter 6-digit verification code">
+          {% for i in range(1, 7) %}
+          <input type="text" name="d{{ i }}" maxlength="1" inputmode="numeric"
+                 pattern="[0-9]" title="Digit {{ i }}" placeholder="·"
+                 aria-label="Digit {{ i }}" required autocomplete="one-time-code">
+          {% endfor %}
+        </div>
+        <button type="submit" class="btn-primary">Verify →</button>
+      </form>
+
+      <div class="otp-timer-row" aria-live="polite">
+        Code expires in <span id="countdown">10:00</span>
+      </div>
+
+      <a href="{{ url_for('resend_otp') }}" class="resend-btn" id="resend-btn" aria-disabled="true">
+        Resend code
+      </a>
+
+      <div class="auth-links" style="margin-top:20px">
+        <a href="{{ url_for('login') }}">← Back to sign in</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

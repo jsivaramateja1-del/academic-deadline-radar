@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Create Account — Academic Deadline Radar{% endblock %}
+{% block content %}
+
+<div class="auth-page">
+  <div class="auth-wrap">
+
+    <div class="auth-brand">
+      <div class="brand-icon">🎯</div>
+      <h1 class="brand-name">Deadline Radar</h1>
+      <p class="brand-tag">Start smart. Stay ahead.</p>
+    </div>
+
+    <div class="auth-card">
+      <h2>Create your account</h2>
+      <p class="auth-sub">Free forever — no credit card needed</p>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}{% for cat, msg in messages %}
+          <div class="flash flash-{{ cat }}" role="alert">
+            <span class="flash-icon">{% if cat == 'error' %}⚠️{% elif cat == 'success' %}✅{% else %}💡{% endif %}</span>
+            {{ msg }}
+          </div>
+        {% endfor %}{% endif %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('register') }}" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="field">
+          <label for="email">Email address</label>
+          <input id="email" type="email" name="email"
+                 placeholder="you@university.edu"
+                 required autocomplete="email" autofocus>
+        </div>
+
+        <div class="field">
+          <label for="pass">Password</label>
+          <div class="pw-wrap">
+            <input id="pass" type="password" name="password"
+                   placeholder="Min 8 characters"
+                   required autocomplete="new-password"
+                   minlength="8">
+            <button type="button" class="pw-toggle" aria-label="Show password">
+              <span class="eye-icon">👁</span>
+            </button>
+          </div>
+          <div class="str-bar" role="progressbar" aria-label="Password strength">
+            <div class="str-fill" id="str-fill"></div>
+          </div>
+          <div class="str-lbl" id="str-lbl" aria-live="polite"></div>
+        </div>
+
+        <button type="submit" class="btn-primary" id="submit-btn">
+          <span class="btn-text">Send verification code</span>
+          <span class="btn-arrow">→</span>
+        </button>
+      </form>
+
+      <div class="auth-links">
+        <a href="{{ url_for('login') }}">Already have an account? <b>Sign in</b></a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
