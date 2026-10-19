@@ -1,0 +1,53 @@
+<div class="task-row {{ t.color }} {% if t.completed %}task-done{% endif %}"
+     data-subject="{{ t.subject | lower }}"
+     data-title="{{ t.title | lower }}"
+     data-color="{{ t.color }}"
+     data-completed="{{ 'true' if t.completed else 'false' }}">
+
+  <div class="task-strip {{ t.color }}" aria-hidden="true"></div>
+
+  <form action="{{ url_for('complete_task', task_id=t.id) }}" method="POST" class="inline-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="task-check {% if t.completed %}is-done{% endif %}"
+            title="{{ 'Mark incomplete' if t.completed else 'Mark complete' }}"
+            aria-label="{{ 'Mark incomplete' if t.completed else 'Mark complete' }}">
+      {{ '✅' if t.completed else '⬜' }}
+    </button>
+  </form>
+
+  <div class="type-icon t-{{ t.type | lower }}" aria-hidden="true">
+    {% if t.type == 'Assignment' %}📝
+    {% elif t.type == 'Exam' %}📖
+    {% elif t.type == 'Lab' %}🧪
+    {% elif t.type == 'Project' %}🏗️
+    {% else %}❓{% endif %}
+  </div>
+
+  <div class="task-info">
+    <div class="task-title">{{ t.title }}</div>
+    <div class="task-meta">
+      <span class="meta-subject">{{ t.subject }}</span>
+      <span class="meta-sep">·</span>
+      <span class="meta-type">{{ t.type }}</span>
+      {% if t.notes %}
+      <span class="meta-sep">·</span>
+      <span class="meta-notes" title="{{ t.notes }}">📝 {{ t.notes[:40] }}{% if t.notes|length > 40 %}…{% endif %}</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="task-pills">
+    <span class="pill pill-{{ t.color }}">{{ t.dl_display }}</span>
+    <span class="pill pill-hrs">{{ t.hours }}h</span>
+  </div>
+
+  <div class="task-actions">
+    <a href="{{ url_for('edit_task', task_id=t.id) }}" class="task-btn task-edit"
+       title="Edit" aria-label="Edit {{ t.title }}">✏️</a>
+    <form action="{{ url_for('delete_task', task_id=t.id) }}" method="POST" class="inline-form"
+          onsubmit="return confirm('Delete &quot;{{ t.title }}&quot;?')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="task-btn task-del" title="Delete" aria-label="Delete {{ t.title }}">🗑</button>
+    </form>
+  </div>
+</div>

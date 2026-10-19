@@ -773,3 +773,186 @@ def server_error(e):
 
 if __name__ == "__main__":
     app.run(debug=False)
+
+
+# ── Email Reminders ───────────────────────────────────────────────────────────
+def send_reminder_email(email: str, task: dict, days_left: int) -> bool:
+    """Send a deadline reminder email for a task."""
+    if days_left < 0:
+        when = f"{abs(days_left)} day{'s' if abs(days_left) != 1 else ''} overdue"
+        urgency = "OVERDUE"
+        color = "#EF4444"
+    elif days_left == 0:
+        when = "due TODAY"
+        urgency = "DUE TODAY"
+        color = "#F97316"
+    elif days_left == 1:
+        when = "due TOMORROW"
+        urgency = "DUE TOMORROW"
+        color = "#EAB308"
+    else:
+        when = f"due in {days_left} days"
+        urgency = f"DUE IN {days_left} DAYS"
+        color = "#3B82F6"
+
+    subject = f"⏰ {urgency}: {task['title']} — Academic Deadline Radar"
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0D1117;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="padding:32px 16px;">
+  <tr><td align="center">
+    <table width="540" cellpadding="0" cellspacing="0"
+           style="background:#161B22;border-radius:16px;overflow:hidden;
+                  border:1px solid rgba(255,255,255,0.1);max-width:540px;">
+      <tr><td style="height:4px;background:{color};font-size:0;">&nbsp;</td></tr>
+      <tr><td style="padding:28px 36px 24px;">
+        <p style="margin:0 0 4px;font-size:18px;font-weight:700;color:#E6EDF3;">🎯 Academic Deadline Radar</p>
+        <p style="margin:0 0 24px;font-size:12px;color:#484F58;">Deadline reminder</p>
+
+        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+                    border-radius:12px;padding:20px 24px;margin-bottom:24px;">
+          <p style="margin:0 0 6px;font-size:11px;font-weight:700;
+                    text-transform:uppercase;letter-spacing:1px;color:{color};">{urgency}</p>
+          <p style="margin:0 0 4px;font-size:20px;font-weight:800;color:#E6EDF3;">{task['title']}</p>
+          <p style="margin:0;font-size:14px;color:#8B949E;">{task['subject']} · {task['type']}</p>
+        </div>
+
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+          <tr>
+            <td style="padding:10px 14px;background:rgba(255,255,255,0.03);
+                       border-radius:8px 0 0 8px;border:1px solid rgba(255,255,255,0.07);
+                       font-size:12px;color:#8B949E;">📅 Deadline</td>
+            <td style="padding:10px 14px;background:rgba(255,255,255,0.03);
+                       border-radius:0 8px 8px 0;border:1px solid rgba(255,255,255,0.07);
+                       border-left:none;font-size:14px;font-weight:600;color:#E6EDF3;">
+              {task['deadline']}{' at ' + task['deadline_time'] if task.get('deadline_time') else ''}
+            </td>
+          </tr>
+          <tr><td colspan="2" style="height:6px;"></td></tr>
+          <tr>
+            <td style="padding:10px 14px;background:rgba(255,255,255,0.03);
+                       border-radius:8px 0 0 8px;border:1px solid rgba(255,255,255,0.07);
+                       font-size:12px;color:#8B949E;">⏱ Est. hours</td>
+            <td style="padding:10px 14px;background:rgba(255,255,255,0.03);
+                       border-radius:0 8px 8px 0;border:1px solid rgba(255,255,255,0.07);
+                       border-left:none;font-size:14px;font-weight:600;color:#E6EDF3;">
+              {task['hours']} hour{'s' if task['hours'] != 1 else ''}
+            </td>
+          </tr>
+          {f'''<tr><td colspan="2" style="height:6px;"></td></tr>
+          <tr>
+            <td style="padding:10px 14px;background:rgba(255,255,255,0.03);
+                       border-radius:8px 0 0 8px;border:1px solid rgba(255,255,255,0.07);
+                       font-size:12px;color:#8B949E;">📝 Notes</td>
+            <td style="padding:10px 14px;background:rgba(255,255,255,0.03);
+                       border-radius:0 8px 8px 0;border:1px solid rgba(255,255,255,0.07);
+                       border-left:none;font-size:13px;color:#E6EDF3;">{task["notes"]}</td>
+          </tr>''' if task.get('notes') else ''}
+        </table>
+
+        <p style="margin:0 0 20px;font-size:14px;color:#8B949E;line-height:1.6;">
+          This task is <strong style="color:{color};">{when}</strong>.
+          {'Get started now!' if days_left > 1 else 'Make sure you submit on time!'}
+        </p>
+
+        <p style="margin:0;font-size:11px;color:#484F58;border-top:1px solid rgba(255,255,255,0.07);
+                  padding-top:16px;">
+          You received this because you have an account on Academic Deadline Radar.<br>
+          This is an automated reminder — please do not reply.
+        </p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>"""
+
+    plain = (
+        f"Academic Deadline Radar — Reminder\n\n"
+        f"{urgency}: {task['title']}\n"
+        f"Subject: {task['subject']} | Type: {task['type']}\n"
+        f"Deadline: {task['deadline']}"
+        f"{' at ' + task['deadline_time'] if task.get('deadline_time') else ''}\n"
+        f"Estimated: {task['hours']} hours\n\n"
+        f"This task is {when}.\n\n"
+        f"— Academic Deadline Radar"
+    )
+
+    print(f"[Reminder] Sending to {email}: {task['title']} ({when})")
+
+    if not BREVO_API_KEY:
+        return False
+
+    try:
+        resp = requests.post(
+            "https://api.brevo.com/v3/smtp/email",
+            headers={"api-key": BREVO_API_KEY, "Content-Type": "application/json"},
+            json={
+                "sender":      {"name": "Academic Deadline Radar", "email": MAIL_FROM},
+                "to":          [{"email": email}],
+                "subject":     subject,
+                "htmlContent": html,
+                "textContent": plain,
+            },
+            timeout=15,
+        )
+        if resp.status_code in (200, 201):
+            print(f"[Reminder] Sent successfully to {email}")
+            return True
+        print(f"[Reminder] Brevo error {resp.status_code}: {resp.text}")
+    except Exception as exc:
+        print(f"[Reminder] Exception: {exc}")
+    return False
+
+
+@app.route("/send-reminders")
+def send_reminders():
+    """
+    Call this route via a cron job or scheduler to send deadline reminders.
+    Sends reminders for tasks due in 7 days, 3 days, 1 day, today, and overdue.
+    Protected by a secret token to prevent abuse.
+    """
+    token = request.args.get("token", "")
+    expected = os.environ.get("REMINDER_TOKEN", "")
+    if not expected or token != expected:
+        abort(403)
+
+    db  = get_db()
+    c   = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    now = datetime.now()
+    today = now.date()
+
+    # Get all incomplete tasks with deadlines today or in future or overdue
+    c.execute("""
+        SELECT t.id, t.user_email, t.subject, t.title, t.type,
+               t.deadline, t.deadline_time, t.hours, t.notes
+        FROM tasks t
+        WHERE t.completed = FALSE
+        ORDER BY t.deadline ASC
+    """)
+    tasks = c.fetchall()
+
+    sent_count = 0
+    reminder_days = {0, 1, 3, 7}  # Send reminders on these days_left values
+
+    for task in tasks:
+        dl    = task["deadline"]
+        days_left = (dl - today).days
+
+        # Only send for overdue (up to 3 days past) or upcoming reminder days
+        if days_left in reminder_days or (-3 <= days_left < 0):
+            task_dict = {
+                "title":         task["title"],
+                "subject":       task["subject"],
+                "type":          task["type"],
+                "deadline":      dl.strftime("%Y-%m-%d"),
+                "deadline_time": task["deadline_time"].strftime("%H:%M") if task["deadline_time"] else None,
+                "hours":         task["hours"],
+                "notes":         task["notes"] or "",
+            }
+            sent = send_reminder_email(task["user_email"], task_dict, days_left)
+            if sent:
+                sent_count += 1
+
+    return {"status": "ok", "reminders_sent": sent_count}, 200

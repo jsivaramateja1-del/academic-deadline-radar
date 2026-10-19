@@ -6,8 +6,7 @@
 
 <div class="dash-page">
 
-  <!-- Top bar -->
-  <nav class="topbar" role="navigation" aria-label="Main navigation">
+  <nav class="topbar" role="navigation">
     <div class="tb-brand">
       <div class="tb-logo" aria-hidden="true">🎯</div>
       <span class="tb-name">Deadline Radar</span>
@@ -23,7 +22,6 @@
 
   <main class="dash-body">
 
-    <!-- Flash messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         <div class="flash-region" aria-live="polite">
@@ -37,7 +35,7 @@
       {% endif %}
     {% endwith %}
 
-    <!-- Greeting + stats row -->
+    <!-- Page header -->
     <div class="page-header">
       <div class="greeting">
         <h1>Hey, <span class="name-grad">{{ username }}</span> 👋</h1>
@@ -45,7 +43,7 @@
           {% if overdue %}
             You have <strong>{{ overdue | length }} overdue</strong> item{{ 's' if overdue | length != 1 }}.
           {% elif urgent %}
-            <strong>{{ urgent | length }}</strong> item{{ 's' if urgent | length != 1 }} need attention today.
+            <strong>{{ urgent | length }}</strong> item{{ 's' if urgent | length != 1 }} due today.
           {% elif active %}
             You have <strong>{{ active | length }}</strong> upcoming deadline{{ 's' if active | length != 1 }}.
           {% else %}
@@ -81,42 +79,35 @@
     <!-- Main grid -->
     <div class="dash-grid">
 
-      <!-- Left column: Add task form -->
-      <aside class="sidebar" aria-label="Add new task">
+      <!-- Left: Add task form -->
+      <aside class="sidebar">
         <div class="add-card">
           <div class="card-head">
             <div class="card-icon" aria-hidden="true">➕</div>
             <h2 class="card-title">Add task</h2>
           </div>
 
-          <form action="{{ url_for('add_task') }}" method="POST"
-                class="add-form" id="add-form" novalidate>
+          <form action="{{ url_for('add_task') }}" method="POST" class="add-form" novalidate>
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             <div class="field">
               <label for="f-subject">Subject</label>
-              <input id="f-subject" name="subject"
-                     placeholder="e.g. Mathematics"
-                     maxlength="80" required
-                     list="subjects-list"
-                     autocomplete="off">
+              <input id="f-subject" name="subject" placeholder="e.g. Mathematics"
+                     maxlength="80" required list="subjects-list" autocomplete="off">
               <datalist id="subjects-list">
-                {% for s in subjects %}
-                  <option value="{{ s }}">
-                {% endfor %}
+                {% for s in subjects %}<option value="{{ s }}">{% endfor %}
               </datalist>
             </div>
 
             <div class="field">
               <label for="f-title">Task title</label>
-              <input id="f-title" name="title"
-                     placeholder="e.g. Chapter 5 assignment"
+              <input id="f-title" name="title" placeholder="e.g. Chapter 5 assignment"
                      maxlength="120" required>
             </div>
 
             <div class="field">
               <label for="f-type">Type</label>
-              <select id="f-type" name="type" aria-label="Task type">
+              <select id="f-type" name="type">
                 {% for t in task_types %}
                 <option value="{{ t }}">
                   {% if t == 'Assignment' %}📝
@@ -133,20 +124,17 @@
             <div class="field-row">
               <div class="field">
                 <label for="f-deadline">Date</label>
-                <input id="f-deadline" name="deadline"
-                       type="date" required>
+                <input id="f-deadline" name="deadline" type="date" required>
               </div>
               <div class="field">
                 <label for="f-time">Time <span class="opt">(optional)</span></label>
-                <input id="f-time" name="deadline_time"
-                       type="time" placeholder="--:--">
+                <input id="f-time" name="deadline_time" type="time">
               </div>
             </div>
 
             <div class="field">
               <label for="f-hours">Estimated hours</label>
-              <input id="f-hours" name="hours"
-                     type="number" min="1" max="200"
+              <input id="f-hours" name="hours" type="number" min="1" max="200"
                      placeholder="e.g. 3" value="2">
             </div>
 
@@ -157,132 +145,137 @@
                         maxlength="500" rows="2"></textarea>
             </div>
 
-            <button type="submit" class="btn-primary btn-add" id="add-btn">
-              Add task
-            </button>
+            <button type="submit" class="btn-primary btn-add">Add task</button>
           </form>
         </div>
       </aside>
 
-      <!-- Right column: task list -->
-      <section class="tasks-section" aria-label="Your tasks">
+      <!-- Right: Grouped task list -->
+      <section class="tasks-section">
 
         <!-- Filter bar -->
-        <div class="filter-bar" role="search">
+        <div class="filter-bar">
           <div class="search-wrap">
             <span class="search-icon" aria-hidden="true">🔍</span>
-            <input type="search" id="task-search"
-                   placeholder="Search tasks…"
-                   aria-label="Search tasks">
+            <input type="search" id="task-search" placeholder="Search tasks…" aria-label="Search tasks">
           </div>
-          <div class="filter-tabs" role="tablist" aria-label="Filter by status">
-            <button class="filter-tab active" data-filter="active" role="tab">Active</button>
-            <button class="filter-tab" data-filter="overdue" role="tab">Overdue</button>
-            <button class="filter-tab" data-filter="done" role="tab">Done</button>
-            <button class="filter-tab" data-filter="all" role="tab">All</button>
-          </div>
-          <div class="sort-wrap">
-            <label for="sort-sel" class="sr-only">Sort by</label>
-            <select id="sort-sel" aria-label="Sort tasks">
-              <option value="urgency">Sort: Urgency</option>
-              <option value="deadline">Sort: Deadline</option>
-              <option value="subject">Sort: Subject</option>
-              <option value="hours">Sort: Hours</option>
-            </select>
+          <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="active">Active</button>
+            <button class="filter-tab" data-filter="overdue">Overdue</button>
+            <button class="filter-tab" data-filter="done">Done</button>
+            <button class="filter-tab" data-filter="all">All</button>
           </div>
         </div>
 
-        <div class="task-list" id="task-list" aria-live="polite" aria-label="Task list">
+        <div class="task-list" id="task-list">
+
           {% if tasks %}
-            {% for t in tasks %}
-            <div class="task-row {{ t.color }} {% if t.completed %}task-done{% endif %}"
-                 data-subject="{{ t.subject | lower }}"
-                 data-title="{{ t.title | lower }}"
-                 data-color="{{ t.color }}"
-                 data-completed="{{ 'true' if t.completed else 'false' }}"
-                 data-deadline="{{ t.deadline }}"
-                 data-hours="{{ t.hours }}"
-                 role="listitem">
 
-              <div class="task-strip {{ t.color }}" aria-hidden="true"></div>
-
-              <!-- Complete toggle -->
-              <form action="{{ url_for('complete_task', task_id=t.id) }}" method="POST"
-                    class="inline-form">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit"
-                        class="task-check {% if t.completed %}is-done{% endif %}"
-                        title="{{ 'Mark incomplete' if t.completed else 'Mark complete' }}"
-                        aria-label="{{ 'Mark ' + t.title + ' incomplete' if t.completed else 'Mark ' + t.title + ' complete' }}">
-                  {{ '✅' if t.completed else '⬜' }}
-                </button>
-              </form>
-
-              <!-- Type icon -->
-              <div class="type-icon t-{{ t.type | lower }}" aria-hidden="true">
-                {% if t.type == 'Assignment' %}📝
-                {% elif t.type == 'Exam' %}📖
-                {% elif t.type == 'Lab' %}🧪
-                {% elif t.type == 'Project' %}🏗️
-                {% else %}❓{% endif %}
+            <!-- OVERDUE GROUP -->
+            {% set overdue_tasks = tasks | selectattr('color', 'equalto', 'overdue') | selectattr('completed', 'equalto', false) | list %}
+            {% if overdue_tasks %}
+            <div class="task-group" data-group="overdue">
+              <div class="group-header gh-overdue">
+                <span class="gh-icon">🔴</span>
+                <span class="gh-title">Overdue</span>
+                <span class="gh-count">{{ overdue_tasks | length }}</span>
               </div>
-
-              <!-- Task info -->
-              <div class="task-info">
-                <div class="task-title">{{ t.title }}</div>
-                <div class="task-meta">
-                  <span class="meta-subject">{{ t.subject }}</span>
-                  <span class="meta-sep" aria-hidden="true">·</span>
-                  <span class="meta-type">{{ t.type }}</span>
-                  {% if t.notes %}
-                  <span class="meta-sep" aria-hidden="true">·</span>
-                  <span class="meta-notes" title="{{ t.notes }}">📝 note</span>
-                  {% endif %}
-                </div>
-              </div>
-
-              <!-- Pills -->
-              <div class="task-pills">
-                <span class="pill pill-{{ t.color }}" aria-label="Due: {{ t.dl_display }}">
-                  {{ t.dl_display }}
-                </span>
-                <span class="pill pill-hrs" aria-label="{{ t.hours }} hours estimated">
-                  {{ t.hours }}h
-                </span>
-              </div>
-
-              <!-- Actions -->
-              <div class="task-actions">
-                <a href="{{ url_for('edit_task', task_id=t.id) }}"
-                   class="task-btn task-edit"
-                   title="Edit task"
-                   aria-label="Edit {{ t.title }}">✏️</a>
-
-                <form action="{{ url_for('delete_task', task_id=t.id) }}" method="POST"
-                      class="inline-form"
-                      onsubmit="return confirm('Delete "{{ t.title }}"? This cannot be undone.')">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button type="submit"
-                          class="task-btn task-del"
-                          title="Delete task"
-                          aria-label="Delete {{ t.title }}">🗑</button>
-                </form>
-              </div>
-
+              {% for t in overdue_tasks %}
+                {% include 'partials/task_row.html' %}
+              {% endfor %}
             </div>
-            {% endfor %}
+            {% endif %}
+
+            <!-- DUE TODAY GROUP -->
+            {% set today_tasks = tasks | selectattr('color', 'equalto', 'urgent') | selectattr('completed', 'equalto', false) | list %}
+            {% if today_tasks %}
+            <div class="task-group" data-group="urgent">
+              <div class="group-header gh-urgent">
+                <span class="gh-icon">🟠</span>
+                <span class="gh-title">Due Today</span>
+                <span class="gh-count">{{ today_tasks | length }}</span>
+              </div>
+              {% for t in today_tasks %}
+                {% include 'partials/task_row.html' %}
+              {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- DUE SOON GROUP (3 days) -->
+            {% set soon_tasks = tasks | selectattr('color', 'equalto', 'high') | selectattr('completed', 'equalto', false) | list %}
+            {% if soon_tasks %}
+            <div class="task-group" data-group="high">
+              <div class="group-header gh-high">
+                <span class="gh-icon">🟡</span>
+                <span class="gh-title">Due Soon <span class="gh-sub">within 3 days</span></span>
+                <span class="gh-count">{{ soon_tasks | length }}</span>
+              </div>
+              {% for t in soon_tasks %}
+                {% include 'partials/task_row.html' %}
+              {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- THIS WEEK GROUP -->
+            {% set week_tasks = tasks | selectattr('color', 'equalto', 'medium') | selectattr('completed', 'equalto', false) | list %}
+            {% if week_tasks %}
+            <div class="task-group" data-group="medium">
+              <div class="group-header gh-medium">
+                <span class="gh-icon">🔵</span>
+                <span class="gh-title">This Week <span class="gh-sub">within 7 days</span></span>
+                <span class="gh-count">{{ week_tasks | length }}</span>
+              </div>
+              {% for t in week_tasks %}
+                {% include 'partials/task_row.html' %}
+              {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- UPCOMING GROUP -->
+            {% set upcoming_tasks = tasks | selectattr('color', 'equalto', 'safe') | selectattr('completed', 'equalto', false) | list %}
+            {% if upcoming_tasks %}
+            <div class="task-group" data-group="safe">
+              <div class="group-header gh-safe">
+                <span class="gh-icon">🟢</span>
+                <span class="gh-title">Upcoming</span>
+                <span class="gh-count">{{ upcoming_tasks | length }}</span>
+              </div>
+              {% for t in upcoming_tasks %}
+                {% include 'partials/task_row.html' %}
+              {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- COMPLETED GROUP -->
+            {% set done_tasks = tasks | selectattr('completed', 'equalto', true) | list %}
+            {% if done_tasks %}
+            <div class="task-group" data-group="done">
+              <div class="group-header gh-done">
+                <span class="gh-icon">✅</span>
+                <span class="gh-title">Completed</span>
+                <span class="gh-count">{{ done_tasks | length }}</span>
+                <button class="gh-toggle" onclick="toggleGroup(this)" aria-label="Toggle completed tasks">▼</button>
+              </div>
+              <div class="group-body collapsed">
+                {% for t in done_tasks %}
+                  {% include 'partials/task_row.html' %}
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
 
           {% else %}
-            <div class="empty-state" role="status">
+            <div class="empty-state">
               <span class="empty-icon" aria-hidden="true">📭</span>
               <h3>No tasks yet</h3>
               <p>Add your first deadline using the form on the left.<br>
                  Start with whatever is due soonest.</p>
             </div>
           {% endif %}
+
         </div>
 
-        <div class="no-results" id="no-results" hidden role="status">
+        <div class="no-results" id="no-results" hidden>
           <span aria-hidden="true">🔍</span>
           <p>No tasks match your search.</p>
         </div>

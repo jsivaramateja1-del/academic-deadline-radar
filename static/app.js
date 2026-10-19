@@ -232,3 +232,71 @@ document.querySelectorAll('form').forEach(form => {
   const today = new Date().toISOString().split('T')[0];
   dl.setAttribute('min', today);
 })();
+
+/* ── Group toggle (completed section) ──────────────────────────────────────── */
+function toggleGroup(btn) {
+  const body = btn.closest('.task-group').querySelector('.group-body');
+  if (!body) return;
+  const collapsed = body.classList.toggle('collapsed');
+  btn.textContent = collapsed ? '▶' : '▼';
+}
+
+/* ── Search across grouped layout ───────────────────────────────────────────── */
+(function () {
+  const searchEl  = document.getElementById('task-search');
+  const filterTabs = document.querySelectorAll('.filter-tab');
+  const noResults  = document.getElementById('no-results');
+  if (!searchEl) return;
+
+  let activeFilter = 'active';
+  let searchQuery  = '';
+
+  function applyAll() {
+    const rows = document.querySelectorAll('.task-row');
+    let visible = 0;
+
+    rows.forEach(row => {
+      const completed = row.dataset.completed === 'true';
+      const color     = row.dataset.color;
+      const title     = row.dataset.title || '';
+      const subject   = row.dataset.subject || '';
+      const q         = searchQuery.toLowerCase();
+
+      const matchSearch = !q || title.includes(q) || subject.includes(q);
+
+      let matchFilter = true;
+      if (activeFilter === 'active')  matchFilter = !completed;
+      if (activeFilter === 'overdue') matchFilter = !completed && color === 'overdue';
+      if (activeFilter === 'done')    matchFilter = completed;
+
+      const show = matchSearch && matchFilter;
+      row.hidden = !show;
+      if (show) visible++;
+    });
+
+    // Hide empty group headers
+    document.querySelectorAll('.task-group').forEach(group => {
+      const anyVisible = [...group.querySelectorAll('.task-row')].some(r => !r.hidden);
+      group.hidden = !anyVisible;
+    });
+
+    if (noResults) noResults.hidden = visible > 0;
+  }
+
+  searchEl.addEventListener('input', () => {
+    searchQuery = searchEl.value.trim();
+    applyAll();
+  });
+
+  filterTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      filterTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      activeFilter = tab.dataset.filter;
+      applyAll();
+    });
+  });
+
+  // Start on active filter
+  applyAll();
+})();
