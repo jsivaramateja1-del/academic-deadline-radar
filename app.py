@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, date
 
 from flask import (
     Flask, render_template, request, redirect,
-    session, flash, g, abort, url_for
+    session, flash, g, abort, url_for, jsonify
 )
 from flask_wtf.csrf import CSRFProtect
 import psycopg2
@@ -18,27 +18,27 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# ── Security ──────────────────────────────────────────────────────────────────
+# ── Security ───────────────────────────────────────────────────────────────────
 _secret = os.environ.get("SECRET_KEY", "")
 if not _secret:
     raise RuntimeError("SECRET_KEY env var is required and must not be empty.")
 app.secret_key = _secret
 app.config["WTF_CSRF_TIME_LIMIT"] = 3600
-
 csrf = CSRFProtect(app)
 
-# ── Config ───────────────────────────────────────────────────────────────────
-BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
-MAIL_FROM     = os.environ.get("MAIL_FROM", "noreply@deadlineradar.app")
-DATABASE_URL  = os.environ.get("DATABASE_URL", "")
+# ── Config ─────────────────────────────────────────────────────────────────────
+BREVO_API_KEY  = os.environ.get("BREVO_API_KEY", "")
+MAIL_FROM      = os.environ.get("MAIL_FROM", "noreply@deadlineradar.app")
+DATABASE_URL   = os.environ.get("DATABASE_URL", "")
+REMINDER_TOKEN = os.environ.get("REMINDER_TOKEN", "")
 
-TASK_TYPES    = ["Assignment", "Exam", "Lab", "Project", "Quiz"]
-MAX_SUBJECT   = 80
-MAX_TITLE     = 120
-MAX_NOTES     = 500
+TASK_TYPES  = ["Assignment", "Exam", "Lab", "Project", "Quiz"]
+MAX_SUBJECT = 80
+MAX_TITLE   = 120
+MAX_NOTES   = 500
 
 
-# ── Database ──────────────────────────────────────────────────────────────────
+# ── Database ───────────────────────────────────────────────────────────────────
 def get_db():
     if "db" not in g:
         conn = psycopg2.connect(DATABASE_URL)
@@ -55,16 +55,16 @@ def close_db(error):
 
 
 def init_db():
-    """Run once at startup to ensure schema exists."""
     conn = psycopg2.connect(DATABASE_URL)
     c = conn.cursor()
     c.execute("""
         CREATE TABLE IF NOT EXISTS users (
-            id          SERIAL PRIMARY KEY,
-            email       TEXT UNIQUE NOT NULL,
-            password    TEXT NOT NULL,
-            is_verified BOOLEAN DEFAULT FALSE,
-            created_at  TIMESTAMPTZ DEFAULT NOW()
+            id           SERIAL PRIMARY KEY,
+            email        TEXT UNIQUE NOT NULL,
+            password     TEXT NOT NULL,
+            is_verified  BOOLEAN DEFAULT FALSE,
+            theme        TEXT DEFAULT 'dark',
+            created_at   TIMESTAMPTZ DEFAULT NOW()
         )
     """)
     c.execute("""
@@ -79,23 +79,25 @@ def init_db():
     """)
     c.execute("""
         CREATE TABLE IF NOT EXISTS tasks (
-            id          SERIAL PRIMARY KEY,
-            user_email  TEXT NOT NULL REFERENCES users(email) ON DELETE CASCADE,
-            subject     TEXT NOT NULL,
-            title       TEXT NOT NULL,
-            type        TEXT NOT NULL,
-            deadline    DATE NOT NULL,
+            id            SERIAL PRIMARY KEY,
+            user_email    TEXT NOT NULL REFERENCES users(email) ON DELETE CASCADE,
+            subject       TEXT NOT NULL,
+            title         TEXT NOT NULL,
+            type          TEXT NOT NULL,
+            deadline      DATE NOT NULL,
             deadline_time TIME,
-            hours       SMALLINT DEFAULT 1,
-            notes       TEXT DEFAULT '',
-            completed   BOOLEAN DEFAULT FALSE,
-            created_at  TIMESTAMPTZ DEFAULT NOW()
+            hours         SMALLINT DEFAULT 1,
+            notes         TEXT DEFAULT '',
+            completed     BOOLEAN DEFAULT FALSE,
+            created_at    TIMESTAMPTZ DEFAULT NOW()
         )
     """)
-    # Index for fast per-user task lookups
     c.execute("""
-        CREATE INDEX IF NOT EXISTS idx_tasks_user_email
-        ON tasks(user_email)
+        CREATE INDEX IF NOT EXISTS idx_tasks_user_email ON tasks(user_email)
+    """)
+    # Add theme column to existing users table if missing
+    c.execute("""
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS theme TEXT DEFAULT 'dark'
     """)
     conn.commit()
     conn.close()
@@ -107,15 +109,14 @@ except Exception as e:
     print(f"[DB] init_db warning: {e}")
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# ── Helpers ────────────────────────────────────────────────────────────────────
 def generate_otp():
     return "".join(random.choices(string.digits, k=6))
 
 
-def save_otp(email: str, otp: str, purpose: str):
+def save_otp(email, otp, purpose):
     db = get_db()
     c  = db.cursor()
-    # Invalidate previous unused OTPs for same email+purpose
     c.execute(
         "UPDATE otps SET used=TRUE WHERE email=%s AND purpose=%s AND used=FALSE",
         (email, purpose)
@@ -128,7 +129,7 @@ def save_otp(email: str, otp: str, purpose: str):
     db.commit()
 
 
-def verify_otp_code(email: str, otp: str, purpose: str) -> bool:
+def verify_otp_code(email, otp, purpose):
     db  = get_db()
     c   = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     now = datetime.now()
@@ -156,61 +157,54 @@ def login_required(f):
     return decorated
 
 
-# ── Urgency algorithm ─────────────────────────────────────────────────────────
-def compute_urgency(task_row, now: datetime):
-    """
-    Returns (color, label, sort_key).
+def get_user_theme():
+    """Get current user's theme preference."""
+    if "user" not in session:
+        return "dark"
+    try:
+        db = get_db()
+        c  = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        c.execute("SELECT theme FROM users WHERE email=%s", (session["user"],))
+        row = c.fetchone()
+        return row["theme"] if row else "dark"
+    except Exception:
+        return "dark"
 
-    Sort key: lower = more urgent (shown first).
 
-    Algorithm:
-      1. Completed tasks always go last.
-      2. Overdue = deadline < today → color 'overdue', sort by how many days past.
-      3. Due today → 'urgent'
-      4. Due within 3 days → 'high'
-      5. Due within 7 days → 'medium'
-      6. Future → 'safe'
-
-    Within same urgency band, tasks with more estimated hours sort first
-    (you should start the heavy ones sooner).
-    Exams always sort before Assignments/Labs/Quizzes within the same band.
-    """
+# ── Urgency algorithm ──────────────────────────────────────────────────────────
+def compute_urgency(task_row, now):
     if task_row["completed"]:
         return ("done", "Completed", 10000)
 
     today = now.date()
-    dl    = task_row["deadline"]  # already a date object from psycopg2
+    dl    = task_row["deadline"]
 
-    # Combine with time if present
     if task_row.get("deadline_time"):
         dl_dt = datetime.combine(dl, task_row["deadline_time"])
     else:
-        dl_dt = datetime.combine(dl, datetime.max.time())  # end of day
+        dl_dt = datetime.combine(dl, datetime.max.time())
 
     minutes_left = (dl_dt - now).total_seconds() / 60
 
     if minutes_left < 0:
         color = "overdue"
         band  = 0
-    elif minutes_left < 24 * 60:        # within 24 hours
+    elif minutes_left < 24 * 60:
         color = "urgent"
         band  = 1
-    elif minutes_left < 3 * 24 * 60:   # within 3 days
+    elif minutes_left < 3 * 24 * 60:
         color = "high"
         band  = 2
-    elif minutes_left < 7 * 24 * 60:   # within 7 days
+    elif minutes_left < 7 * 24 * 60:
         color = "medium"
         band  = 3
     else:
         color = "safe"
         band  = 4
 
-    # Type weight: Exam=0, Project=1, Assignment/Lab/Quiz=2
     type_weight = {"Exam": 0, "Project": 1}.get(task_row["type"], 2)
-
-    # Within a band: sort by minutes_left ASC, then type, then hours DESC
-    hours = task_row.get("hours") or 1
-    sort_key = (band, minutes_left, type_weight, -hours)
+    hours       = task_row.get("hours") or 1
+    sort_key    = (band, minutes_left, type_weight, -hours)
 
     label_map = {
         "overdue": "Overdue",
@@ -222,7 +216,7 @@ def compute_urgency(task_row, now: datetime):
     return (color, label_map[color], sort_key)
 
 
-def days_left_display(task_row, now: datetime) -> str:
+def days_left_display(task_row, now):
     today = now.date()
     dl    = task_row["deadline"]
     days  = (dl - today).days
@@ -239,54 +233,47 @@ def days_left_display(task_row, now: datetime) -> str:
         return f"{days}d left"
 
 
-# ── Email ─────────────────────────────────────────────────────────────────────
-def send_otp_email(email: str, otp: str, purpose: str) -> bool:
+# ── Email ──────────────────────────────────────────────────────────────────────
+def send_otp_email(email, otp, purpose):
     configs = {
         "register": {
-            "subject": "Verify your Academic Deadline Radar account",
+            "subject":  "Verify your Academic Deadline Radar account",
             "headline": "One last step — verify your email.",
-            "body": "You're almost in. Use the code below to confirm your email address.",
-            "note": "If you didn't create this account, you can safely ignore this email.",
-        },
-        "login": {
-            "subject": "Your login code for Academic Deadline Radar",
-            "headline": "Here's your sign-in code.",
-            "body": "Use the 6-digit code below to complete your sign-in. It expires in 10 minutes.",
-            "note": "If you didn't try to sign in, your password may be compromised.",
+            "body":     "Use the code below to confirm your email address.",
+            "note":     "If you didn't create this account, ignore this email.",
         },
         "forgot": {
-            "subject": "Reset your Academic Deadline Radar password",
+            "subject":  "Reset your Academic Deadline Radar password",
             "headline": "Password reset requested.",
-            "body": "Use the code below to reset your password. It expires in 10 minutes.",
-            "note": "If you didn't request this, ignore this email — your password won't change.",
+            "body":     "Use the code below to reset your password. It expires in 10 minutes.",
+            "note":     "If you didn't request this, ignore this email.",
         },
     }
     cfg = configs.get(purpose, configs["register"])
 
-    # Always print to logs (for dev / fallback)
     print(f"\n{'='*50}\n  OTP [{purpose.upper()}] → {email}: {otp}\n{'='*50}\n")
 
     html = f"""<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<html lang="en"><head><meta charset="UTF-8"></head>
 <body style="margin:0;padding:0;background:#0F1117;font-family:'Segoe UI',Arial,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="padding:32px 16px;">
-  <tr><td align="center">
-    <table width="540" cellpadding="0" cellspacing="0" style="background:#1A1D27;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.1);max-width:540px;">
-      <tr><td style="padding:32px 40px 24px;">
-        <p style="margin:0 0 4px;font-size:18px;font-weight:700;color:#F1F5F9;">🎯 Academic Deadline Radar</p>
-        <p style="margin:0 0 24px;font-size:13px;color:#64748B;">Never miss a deadline</p>
-        <p style="margin:0 0 8px;font-size:16px;font-weight:600;color:#F1F5F9;">{cfg['headline']}</p>
-        <p style="margin:0 0 28px;font-size:14px;color:#94A3B8;line-height:1.6;">{cfg['body']}</p>
-        <div style="text-align:center;letter-spacing:12px;font-size:36px;font-weight:800;color:#8B5CF6;margin:0 0 28px;font-family:monospace;">{otp}</div>
-        <p style="margin:0;font-size:12px;color:#475569;border-top:1px solid rgba(255,255,255,0.07);padding-top:16px;">{cfg['note']}</p>
-      </td></tr>
-    </table>
-  </td></tr>
+<tr><td align="center">
+<table width="540" cellpadding="0" cellspacing="0"
+       style="background:#1A1D27;border-radius:16px;border:1px solid rgba(255,255,255,0.1);max-width:540px;">
+<tr><td style="padding:32px 40px 24px;">
+  <p style="margin:0 0 4px;font-size:18px;font-weight:700;color:#F1F5F9;">🎯 Academic Deadline Radar</p>
+  <p style="margin:0 0 24px;font-size:13px;color:#64748B;">Never miss a deadline</p>
+  <p style="margin:0 0 8px;font-size:16px;font-weight:600;color:#F1F5F9;">{cfg['headline']}</p>
+  <p style="margin:0 0 28px;font-size:14px;color:#94A3B8;line-height:1.6;">{cfg['body']}</p>
+  <div style="text-align:center;letter-spacing:12px;font-size:36px;font-weight:800;
+              color:#8B5CF6;margin:0 0 28px;font-family:monospace;">{otp}</div>
+  <p style="margin:0;font-size:12px;color:#475569;border-top:1px solid rgba(255,255,255,0.07);
+            padding-top:16px;">{cfg['note']}</p>
+</td></tr>
+</table>
+</td></tr>
 </table>
 </body></html>"""
-
-    plain = f"Academic Deadline Radar\n\n{cfg['headline']}\n\n{cfg['body']}\n\nYour code: {otp}\n\n{cfg['note']}"
 
     if not BREVO_API_KEY:
         return False
@@ -300,7 +287,6 @@ def send_otp_email(email: str, otp: str, purpose: str) -> bool:
                 "to":          [{"email": email}],
                 "subject":     cfg["subject"],
                 "htmlContent": html,
-                "textContent": plain,
             },
             timeout=15,
         )
@@ -312,7 +298,89 @@ def send_otp_email(email: str, otp: str, purpose: str) -> bool:
     return False
 
 
-# ── Auth routes ───────────────────────────────────────────────────────────────
+def send_reminder_email(email, task, days_left):
+    if days_left < 0:
+        when    = f"{abs(days_left)} day{'s' if abs(days_left) != 1 else ''} overdue"
+        urgency = "OVERDUE"
+        color   = "#EF4444"
+    elif days_left == 0:
+        when    = "due TODAY"
+        urgency = "DUE TODAY"
+        color   = "#F97316"
+    elif days_left == 1:
+        when    = "due TOMORROW"
+        urgency = "DUE TOMORROW"
+        color   = "#EAB308"
+    else:
+        when    = f"due in {days_left} days"
+        urgency = f"DUE IN {days_left} DAYS"
+        color   = "#3B82F6"
+
+    subject = f"⏰ {urgency}: {task['title']} — Academic Deadline Radar"
+
+    html = f"""<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#0D1117;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="padding:32px 16px;">
+<tr><td align="center">
+<table width="540" cellpadding="0" cellspacing="0"
+       style="background:#161B22;border-radius:16px;overflow:hidden;
+              border:1px solid rgba(255,255,255,0.1);max-width:540px;">
+<tr><td style="height:4px;background:{color};font-size:0;">&nbsp;</td></tr>
+<tr><td style="padding:28px 36px 24px;">
+  <p style="margin:0 0 20px;font-size:18px;font-weight:700;color:#E6EDF3;">🎯 Academic Deadline Radar</p>
+  <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+              border-radius:12px;padding:20px 24px;margin-bottom:24px;">
+    <p style="margin:0 0 6px;font-size:11px;font-weight:700;
+              text-transform:uppercase;letter-spacing:1px;color:{color};">{urgency}</p>
+    <p style="margin:0 0 4px;font-size:20px;font-weight:800;color:#E6EDF3;">{task['title']}</p>
+    <p style="margin:0;font-size:14px;color:#8B949E;">{task['subject']} · {task['type']}</p>
+  </div>
+  <p style="margin:0 0 8px;font-size:14px;color:#8B949E;">
+    📅 <strong style="color:#E6EDF3;">{task['deadline']}</strong>
+    {('at ' + task['deadline_time']) if task.get('deadline_time') else ''}
+    &nbsp;·&nbsp; ⏱ <strong style="color:#E6EDF3;">{task['hours']}h</strong> estimated
+  </p>
+  {f'<p style="margin:8px 0;font-size:13px;color:#8B949E;">📝 {task["notes"]}</p>' if task.get('notes') else ''}
+  <p style="margin:16px 0 0;font-size:14px;color:#8B949E;line-height:1.6;">
+    This task is <strong style="color:{color};">{when}</strong>.
+  </p>
+  <p style="margin:16px 0 0;font-size:11px;color:#484F58;
+            border-top:1px solid rgba(255,255,255,0.07);padding-top:16px;">
+    Automated reminder from Academic Deadline Radar. Do not reply.
+  </p>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>"""
+
+    print(f"[Reminder] {email}: {task['title']} ({when})")
+
+    if not BREVO_API_KEY:
+        return False
+
+    try:
+        resp = requests.post(
+            "https://api.brevo.com/v3/smtp/email",
+            headers={"api-key": BREVO_API_KEY, "Content-Type": "application/json"},
+            json={
+                "sender":      {"name": "Academic Deadline Radar", "email": MAIL_FROM},
+                "to":          [{"email": email}],
+                "subject":     subject,
+                "htmlContent": html,
+            },
+            timeout=15,
+        )
+        if resp.status_code in (200, 201):
+            return True
+        print(f"[Reminder] Brevo error {resp.status_code}: {resp.text}")
+    except Exception as exc:
+        print(f"[Reminder] Exception: {exc}")
+    return False
+
+
+# ── Auth routes ────────────────────────────────────────────────────────────────
 @app.route("/", methods=["GET"])
 def index():
     if "user" in session:
@@ -329,7 +397,6 @@ def register():
         email    = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
 
-        # Validate
         if "@" not in email or "." not in email or len(email) > 254:
             flash("Please enter a valid email address.", "error")
             return redirect(url_for("register"))
@@ -366,7 +433,6 @@ def register():
         if sent:
             flash(f"A verification code was sent to {email}.", "success")
         else:
-            # Dev fallback: show OTP in info flash only if email failed
             flash(f"Email sending failed. Dev code: {otp}", "info")
 
         return redirect(url_for("verify_otp"))
@@ -388,11 +454,10 @@ def login():
         c.execute("SELECT password, is_verified FROM users WHERE email=%s", (email,))
         user = c.fetchone()
 
-        # Constant-time-ish: always do hash check to prevent timing attacks
         if user:
             pw_ok = check_password_hash(user["password"], password)
         else:
-            check_password_hash("dummy", password)  # prevent timing oracle
+            check_password_hash("dummy", password)
             pw_ok = False
 
         if not user or not pw_ok:
@@ -402,22 +467,13 @@ def login():
         if not user["is_verified"]:
             session["otp_email"]   = email
             session["otp_purpose"] = "register"
-            flash("Please verify your email to continue.", "info")
+            flash("Please verify your email first.", "info")
             return redirect(url_for("verify_otp"))
 
-        otp  = generate_otp()
-        save_otp(email, otp, "login")
-        sent = send_otp_email(email, otp, "login")
-
-        session["otp_email"]   = email
-        session["otp_purpose"] = "login"
-
-        if sent:
-            flash(f"A sign-in code was sent to {email}.", "success")
-        else:
-            flash(f"Email sending failed. Dev code: {otp}", "info")
-
-        return redirect(url_for("verify_otp"))
+        # FIX 3: Direct login — no OTP required
+        session.clear()
+        session["user"] = email
+        return redirect(url_for("dashboard"))
 
     return render_template("login.html")
 
@@ -445,11 +501,6 @@ def verify_otp():
                 flash("Email verified! Please sign in.", "success")
                 return redirect(url_for("login"))
 
-            elif purpose == "login":
-                session.clear()           # prevent session fixation
-                session["user"] = email
-                return redirect(url_for("dashboard"))
-
             elif purpose == "forgot":
                 session["reset_email"] = email
                 session.pop("otp_email",   None)
@@ -474,7 +525,7 @@ def resend_otp():
     sent = send_otp_email(email, otp, purpose)
 
     if sent:
-        flash("A new code has been sent to your email.", "success")
+        flash("A new code has been sent.", "success")
     else:
         flash(f"Email sending failed. Dev code: {otp}", "info")
     return redirect(url_for("verify_otp"))
@@ -484,10 +535,8 @@ def resend_otp():
 def forgot_password():
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
-
-        # Always show same message to prevent email enumeration
-        db = get_db()
-        c  = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        db    = get_db()
+        c     = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         c.execute("SELECT id FROM users WHERE email=%s AND is_verified=TRUE", (email,))
         user = c.fetchone()
 
@@ -537,13 +586,63 @@ def reset_password():
     return render_template("reset_password.html")
 
 
+# FIX 4: Change password (logged in)
+@app.route("/change-password", methods=["GET", "POST"])
+@login_required
+def change_password():
+    if request.method == "POST":
+        current  = request.form.get("current", "")
+        password = request.form.get("password", "")
+        confirm  = request.form.get("confirm", "")
+
+        db = get_db()
+        c  = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        c.execute("SELECT password FROM users WHERE email=%s", (session["user"],))
+        user = c.fetchone()
+
+        if not check_password_hash(user["password"], current):
+            flash("Current password is incorrect.", "error")
+            return redirect(url_for("change_password"))
+        if len(password) < 8:
+            flash("New password must be at least 8 characters.", "error")
+            return redirect(url_for("change_password"))
+        if password != confirm:
+            flash("New passwords do not match.", "error")
+            return redirect(url_for("change_password"))
+
+        c.execute(
+            "UPDATE users SET password=%s WHERE email=%s",
+            (generate_password_hash(password), session["user"])
+        )
+        db.commit()
+        flash("Password changed successfully.", "success")
+        return redirect(url_for("dashboard"))
+
+    return render_template("change_password.html")
+
+
+# FIX 8: Theme toggle
+@app.route("/set-theme", methods=["POST"])
+@login_required
+def set_theme():
+    theme = request.form.get("theme", "dark")
+    if theme not in ("dark", "light"):
+        theme = "dark"
+    db = get_db()
+    c  = db.cursor()
+    c.execute("UPDATE users SET theme=%s WHERE email=%s", (theme, session["user"]))
+    db.commit()
+    session["theme"] = theme
+    return redirect(request.referrer or url_for("dashboard"))
+
+
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect(url_for("login"))
 
 
-# ── Dashboard ─────────────────────────────────────────────────────────────────
+# ── Dashboard ──────────────────────────────────────────────────────────────────
 @app.route("/dashboard")
 @login_required
 def dashboard():
@@ -554,19 +653,21 @@ def dashboard():
     c.execute(
         """SELECT id, subject, title, type, deadline, deadline_time,
                   hours, notes, completed, created_at
-           FROM tasks
-           WHERE user_email=%s
+           FROM tasks WHERE user_email=%s
            ORDER BY deadline ASC, deadline_time ASC NULLS LAST""",
         (session["user"],)
     )
     rows = c.fetchall()
 
-    # Get distinct subjects for autocomplete
     c.execute(
         "SELECT DISTINCT subject FROM tasks WHERE user_email=%s ORDER BY subject",
         (session["user"],)
     )
     subjects = [r["subject"] for r in c.fetchall()]
+
+    c.execute("SELECT theme FROM users WHERE email=%s", (session["user"],))
+    user_row = c.fetchone()
+    theme = user_row["theme"] if user_row else "dark"
 
     tasks = []
     for r in rows:
@@ -590,7 +691,6 @@ def dashboard():
 
     tasks.sort(key=lambda x: x["_sort"])
 
-    # Stats
     active    = [t for t in tasks if not t["completed"]]
     completed = [t for t in tasks if t["completed"]]
     overdue   = [t for t in active if t["color"] == "overdue"]
@@ -608,11 +708,12 @@ def dashboard():
         this_week=this_week,
         subjects=subjects,
         task_types=TASK_TYPES,
+        theme=theme,
         now=now,
     )
 
 
-# ── Task CRUD ─────────────────────────────────────────────────────────────────
+# ── Task CRUD ──────────────────────────────────────────────────────────────────
 @app.route("/add_task", methods=["POST"])
 @login_required
 def add_task():
@@ -642,13 +743,12 @@ def add_task():
         flash("Please enter a valid deadline date.", "error")
         return redirect(url_for("dashboard"))
 
-    # Parse time if provided
     parsed_time = None
     if dl_time:
         try:
             parsed_time = datetime.strptime(dl_time, "%H:%M").time()
         except ValueError:
-            pass  # ignore invalid time, use date-only
+            pass
 
     db = get_db()
     c  = db.cursor()
@@ -667,13 +767,56 @@ def add_task():
 def complete_task(task_id):
     db = get_db()
     c  = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    # Verify ownership
-    c.execute("SELECT id, completed FROM tasks WHERE id=%s AND user_email=%s", (task_id, session["user"]))
+    c.execute("SELECT id, completed FROM tasks WHERE id=%s AND user_email=%s",
+              (task_id, session["user"]))
     task = c.fetchone()
     if not task:
         abort(404)
-    new_state = not task["completed"]
-    c.execute("UPDATE tasks SET completed=%s WHERE id=%s", (new_state, task_id))
+    c.execute("UPDATE tasks SET completed=%s WHERE id=%s", (not task["completed"], task_id))
+    db.commit()
+    return redirect(url_for("dashboard"))
+
+
+# FIX 5: Bulk actions
+@app.route("/bulk_action", methods=["POST"])
+@login_required
+def bulk_action():
+    action   = request.form.get("action", "")
+    task_ids = request.form.getlist("task_ids")
+
+    if not task_ids:
+        flash("No tasks selected.", "error")
+        return redirect(url_for("dashboard"))
+
+    try:
+        ids = [int(i) for i in task_ids]
+    except ValueError:
+        abort(400)
+
+    db = get_db()
+    c  = db.cursor()
+
+    if action == "complete":
+        c.execute(
+            "UPDATE tasks SET completed=TRUE WHERE id=ANY(%s) AND user_email=%s",
+            (ids, session["user"])
+        )
+        flash(f"{c.rowcount} task(s) marked complete.", "success")
+    elif action == "delete":
+        c.execute(
+            "DELETE FROM tasks WHERE id=ANY(%s) AND user_email=%s",
+            (ids, session["user"])
+        )
+        flash(f"{c.rowcount} task(s) deleted.", "success")
+    elif action == "clear_completed":
+        c.execute(
+            "DELETE FROM tasks WHERE completed=TRUE AND user_email=%s",
+            (session["user"],)
+        )
+        flash(f"{c.rowcount} completed task(s) cleared.", "success")
+    else:
+        flash("Unknown action.", "error")
+
     db.commit()
     return redirect(url_for("dashboard"))
 
@@ -683,7 +826,8 @@ def complete_task(task_id):
 def edit_task(task_id):
     db = get_db()
     c  = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    c.execute("SELECT * FROM tasks WHERE id=%s AND user_email=%s", (task_id, session["user"]))
+    c.execute("SELECT * FROM tasks WHERE id=%s AND user_email=%s",
+              (task_id, session["user"]))
     task = c.fetchone()
 
     if not task:
@@ -725,17 +869,15 @@ def edit_task(task_id):
                 pass
 
         c.execute(
-            """UPDATE tasks
-               SET subject=%s, title=%s, type=%s, deadline=%s,
-                   deadline_time=%s, hours=%s, notes=%s
-               WHERE id=%s AND user_email=%s""",
-            (subject, title, type_, dl_date, parsed_time, hours, notes, task_id, session["user"])
+            """UPDATE tasks SET subject=%s,title=%s,type=%s,deadline=%s,
+               deadline_time=%s,hours=%s,notes=%s WHERE id=%s AND user_email=%s""",
+            (subject, title, type_, dl_date, parsed_time, hours, notes,
+             task_id, session["user"])
         )
         db.commit()
         flash("Task updated.", "success")
         return redirect(url_for("dashboard"))
 
-    # Format for template
     task_data = dict(task)
     task_data["deadline"]      = task["deadline"].strftime("%Y-%m-%d")
     task_data["deadline_time"] = task["deadline_time"].strftime("%H:%M") if task["deadline_time"] else ""
@@ -747,7 +889,8 @@ def edit_task(task_id):
 def delete_task(task_id):
     db = get_db()
     c  = db.cursor()
-    c.execute("DELETE FROM tasks WHERE id=%s AND user_email=%s", (task_id, session["user"]))
+    c.execute("DELETE FROM tasks WHERE id=%s AND user_email=%s",
+              (task_id, session["user"]))
     if c.rowcount == 0:
         abort(404)
     db.commit()
@@ -755,16 +898,54 @@ def delete_task(task_id):
     return redirect(url_for("dashboard"))
 
 
+# ── Reminders ──────────────────────────────────────────────────────────────────
+@app.route("/send-reminders")
+def send_reminders():
+    token    = request.args.get("token", "")
+    if not REMINDER_TOKEN or token != REMINDER_TOKEN:
+        abort(403)
+
+    db    = get_db()
+    c     = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    today = datetime.now().date()
+
+    c.execute("""
+        SELECT id, user_email, subject, title, type,
+               deadline, deadline_time, hours, notes
+        FROM tasks WHERE completed=FALSE
+        ORDER BY deadline ASC
+    """)
+    tasks = c.fetchall()
+
+    sent_count  = 0
+    remind_days = {0, 1, 3, 7}
+
+    for task in tasks:
+        days_left = (task["deadline"] - today).days
+        if days_left in remind_days or (-3 <= days_left < 0):
+            task_dict = {
+                "title":         task["title"],
+                "subject":       task["subject"],
+                "type":          task["type"],
+                "deadline":      task["deadline"].strftime("%Y-%m-%d"),
+                "deadline_time": task["deadline_time"].strftime("%H:%M") if task["deadline_time"] else None,
+                "hours":         task["hours"],
+                "notes":         task["notes"] or "",
+            }
+            if send_reminder_email(task["user_email"], task_dict, days_left):
+                sent_count += 1
+
+    return jsonify({"status": "ok", "reminders_sent": sent_count})
+
+
 # ── Error handlers ─────────────────────────────────────────────────────────────
 @app.errorhandler(404)
 def not_found(e):
     return render_template("error.html", code=404, message="Page not found."), 404
 
-
 @app.errorhandler(403)
 def forbidden(e):
     return render_template("error.html", code=403, message="Access denied."), 403
-
 
 @app.errorhandler(500)
 def server_error(e):
@@ -773,186 +954,3 @@ def server_error(e):
 
 if __name__ == "__main__":
     app.run(debug=False)
-
-
-# ── Email Reminders ───────────────────────────────────────────────────────────
-def send_reminder_email(email: str, task: dict, days_left: int) -> bool:
-    """Send a deadline reminder email for a task."""
-    if days_left < 0:
-        when = f"{abs(days_left)} day{'s' if abs(days_left) != 1 else ''} overdue"
-        urgency = "OVERDUE"
-        color = "#EF4444"
-    elif days_left == 0:
-        when = "due TODAY"
-        urgency = "DUE TODAY"
-        color = "#F97316"
-    elif days_left == 1:
-        when = "due TOMORROW"
-        urgency = "DUE TOMORROW"
-        color = "#EAB308"
-    else:
-        when = f"due in {days_left} days"
-        urgency = f"DUE IN {days_left} DAYS"
-        color = "#3B82F6"
-
-    subject = f"⏰ {urgency}: {task['title']} — Academic Deadline Radar"
-
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#0D1117;font-family:'Segoe UI',Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="padding:32px 16px;">
-  <tr><td align="center">
-    <table width="540" cellpadding="0" cellspacing="0"
-           style="background:#161B22;border-radius:16px;overflow:hidden;
-                  border:1px solid rgba(255,255,255,0.1);max-width:540px;">
-      <tr><td style="height:4px;background:{color};font-size:0;">&nbsp;</td></tr>
-      <tr><td style="padding:28px 36px 24px;">
-        <p style="margin:0 0 4px;font-size:18px;font-weight:700;color:#E6EDF3;">🎯 Academic Deadline Radar</p>
-        <p style="margin:0 0 24px;font-size:12px;color:#484F58;">Deadline reminder</p>
-
-        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
-                    border-radius:12px;padding:20px 24px;margin-bottom:24px;">
-          <p style="margin:0 0 6px;font-size:11px;font-weight:700;
-                    text-transform:uppercase;letter-spacing:1px;color:{color};">{urgency}</p>
-          <p style="margin:0 0 4px;font-size:20px;font-weight:800;color:#E6EDF3;">{task['title']}</p>
-          <p style="margin:0;font-size:14px;color:#8B949E;">{task['subject']} · {task['type']}</p>
-        </div>
-
-        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
-          <tr>
-            <td style="padding:10px 14px;background:rgba(255,255,255,0.03);
-                       border-radius:8px 0 0 8px;border:1px solid rgba(255,255,255,0.07);
-                       font-size:12px;color:#8B949E;">📅 Deadline</td>
-            <td style="padding:10px 14px;background:rgba(255,255,255,0.03);
-                       border-radius:0 8px 8px 0;border:1px solid rgba(255,255,255,0.07);
-                       border-left:none;font-size:14px;font-weight:600;color:#E6EDF3;">
-              {task['deadline']}{' at ' + task['deadline_time'] if task.get('deadline_time') else ''}
-            </td>
-          </tr>
-          <tr><td colspan="2" style="height:6px;"></td></tr>
-          <tr>
-            <td style="padding:10px 14px;background:rgba(255,255,255,0.03);
-                       border-radius:8px 0 0 8px;border:1px solid rgba(255,255,255,0.07);
-                       font-size:12px;color:#8B949E;">⏱ Est. hours</td>
-            <td style="padding:10px 14px;background:rgba(255,255,255,0.03);
-                       border-radius:0 8px 8px 0;border:1px solid rgba(255,255,255,0.07);
-                       border-left:none;font-size:14px;font-weight:600;color:#E6EDF3;">
-              {task['hours']} hour{'s' if task['hours'] != 1 else ''}
-            </td>
-          </tr>
-          {f'''<tr><td colspan="2" style="height:6px;"></td></tr>
-          <tr>
-            <td style="padding:10px 14px;background:rgba(255,255,255,0.03);
-                       border-radius:8px 0 0 8px;border:1px solid rgba(255,255,255,0.07);
-                       font-size:12px;color:#8B949E;">📝 Notes</td>
-            <td style="padding:10px 14px;background:rgba(255,255,255,0.03);
-                       border-radius:0 8px 8px 0;border:1px solid rgba(255,255,255,0.07);
-                       border-left:none;font-size:13px;color:#E6EDF3;">{task["notes"]}</td>
-          </tr>''' if task.get('notes') else ''}
-        </table>
-
-        <p style="margin:0 0 20px;font-size:14px;color:#8B949E;line-height:1.6;">
-          This task is <strong style="color:{color};">{when}</strong>.
-          {'Get started now!' if days_left > 1 else 'Make sure you submit on time!'}
-        </p>
-
-        <p style="margin:0;font-size:11px;color:#484F58;border-top:1px solid rgba(255,255,255,0.07);
-                  padding-top:16px;">
-          You received this because you have an account on Academic Deadline Radar.<br>
-          This is an automated reminder — please do not reply.
-        </p>
-      </td></tr>
-    </table>
-  </td></tr>
-</table>
-</body></html>"""
-
-    plain = (
-        f"Academic Deadline Radar — Reminder\n\n"
-        f"{urgency}: {task['title']}\n"
-        f"Subject: {task['subject']} | Type: {task['type']}\n"
-        f"Deadline: {task['deadline']}"
-        f"{' at ' + task['deadline_time'] if task.get('deadline_time') else ''}\n"
-        f"Estimated: {task['hours']} hours\n\n"
-        f"This task is {when}.\n\n"
-        f"— Academic Deadline Radar"
-    )
-
-    print(f"[Reminder] Sending to {email}: {task['title']} ({when})")
-
-    if not BREVO_API_KEY:
-        return False
-
-    try:
-        resp = requests.post(
-            "https://api.brevo.com/v3/smtp/email",
-            headers={"api-key": BREVO_API_KEY, "Content-Type": "application/json"},
-            json={
-                "sender":      {"name": "Academic Deadline Radar", "email": MAIL_FROM},
-                "to":          [{"email": email}],
-                "subject":     subject,
-                "htmlContent": html,
-                "textContent": plain,
-            },
-            timeout=15,
-        )
-        if resp.status_code in (200, 201):
-            print(f"[Reminder] Sent successfully to {email}")
-            return True
-        print(f"[Reminder] Brevo error {resp.status_code}: {resp.text}")
-    except Exception as exc:
-        print(f"[Reminder] Exception: {exc}")
-    return False
-
-
-@app.route("/send-reminders")
-def send_reminders():
-    """
-    Call this route via a cron job or scheduler to send deadline reminders.
-    Sends reminders for tasks due in 7 days, 3 days, 1 day, today, and overdue.
-    Protected by a secret token to prevent abuse.
-    """
-    token = request.args.get("token", "")
-    expected = os.environ.get("REMINDER_TOKEN", "")
-    if not expected or token != expected:
-        abort(403)
-
-    db  = get_db()
-    c   = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    now = datetime.now()
-    today = now.date()
-
-    # Get all incomplete tasks with deadlines today or in future or overdue
-    c.execute("""
-        SELECT t.id, t.user_email, t.subject, t.title, t.type,
-               t.deadline, t.deadline_time, t.hours, t.notes
-        FROM tasks t
-        WHERE t.completed = FALSE
-        ORDER BY t.deadline ASC
-    """)
-    tasks = c.fetchall()
-
-    sent_count = 0
-    reminder_days = {0, 1, 3, 7}  # Send reminders on these days_left values
-
-    for task in tasks:
-        dl    = task["deadline"]
-        days_left = (dl - today).days
-
-        # Only send for overdue (up to 3 days past) or upcoming reminder days
-        if days_left in reminder_days or (-3 <= days_left < 0):
-            task_dict = {
-                "title":         task["title"],
-                "subject":       task["subject"],
-                "type":          task["type"],
-                "deadline":      dl.strftime("%Y-%m-%d"),
-                "deadline_time": task["deadline_time"].strftime("%H:%M") if task["deadline_time"] else None,
-                "hours":         task["hours"],
-                "notes":         task["notes"] or "",
-            }
-            sent = send_reminder_email(task["user_email"], task_dict, days_left)
-            if sent:
-                sent_count += 1
-
-    return {"status": "ok", "reminders_sent": sent_count}, 200

@@ -1,21 +1,30 @@
 {% extends "base.html" %}
 {% block title %}Dashboard — Academic Deadline Radar{% endblock %}
 {% block content %}
-
 {% set username = email.split('@')[0] %}
 
 <div class="dash-page">
 
-  <nav class="topbar" role="navigation">
+  <nav class="topbar">
     <div class="tb-brand">
-      <div class="tb-logo" aria-hidden="true">🎯</div>
+      <div class="tb-logo">🎯</div>
       <span class="tb-name">Deadline Radar</span>
     </div>
     <div class="tb-right">
+      <!-- FIX 8: Theme toggle -->
+      <form action="{{ url_for('set_theme') }}" method="POST" class="inline-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="theme" value="{{ 'light' if theme == 'dark' else 'dark' }}">
+        <button type="submit" class="theme-btn" title="Toggle theme" aria-label="Toggle light/dark mode">
+          {{ '☀️' if theme == 'dark' else '🌙' }}
+        </button>
+      </form>
       <div class="user-chip" title="{{ email }}">
-        <div class="av" aria-hidden="true">{{ username[0].upper() }}</div>
+        <div class="av">{{ username[0].upper() }}</div>
         <span class="av-name">{{ username }}</span>
       </div>
+      <!-- FIX 4: Change password link -->
+      <a href="{{ url_for('change_password') }}" class="icon-btn" title="Change password" aria-label="Change password">🔒</a>
       <a href="{{ url_for('logout') }}" class="logout-btn">Sign out</a>
     </div>
   </nav>
@@ -35,61 +44,37 @@
       {% endif %}
     {% endwith %}
 
-    <!-- Page header -->
+    <!-- Header -->
     <div class="page-header">
       <div class="greeting">
         <h1>Hey, <span class="name-grad">{{ username }}</span> 👋</h1>
         <p>
-          {% if overdue %}
-            You have <strong>{{ overdue | length }} overdue</strong> item{{ 's' if overdue | length != 1 }}.
-          {% elif urgent %}
-            <strong>{{ urgent | length }}</strong> item{{ 's' if urgent | length != 1 }} due today.
-          {% elif active %}
-            You have <strong>{{ active | length }}</strong> upcoming deadline{{ 's' if active | length != 1 }}.
-          {% else %}
-            All clear — add your first deadline below.
-          {% endif %}
+          {% if overdue %}<strong>{{ overdue|length }} overdue</strong> item{{ 's' if overdue|length != 1 }}.
+          {% elif urgent %}<strong>{{ urgent|length }}</strong> due today.
+          {% elif active %}<strong>{{ active|length }}</strong> upcoming deadline{{ 's' if active|length != 1 }}.
+          {% else %}All clear — add your first deadline below.{% endif %}
         </p>
       </div>
-
       <div class="stat-row">
-        <div class="stat-chip chip-all">
-          <span class="chip-n">{{ active | length }}</span>
-          <span class="chip-l">Active</span>
-        </div>
-        <div class="stat-chip chip-red">
-          <span class="chip-n">{{ overdue | length }}</span>
-          <span class="chip-l">Overdue</span>
-        </div>
-        <div class="stat-chip chip-orange">
-          <span class="chip-n">{{ urgent | length }}</span>
-          <span class="chip-l">Today</span>
-        </div>
-        <div class="stat-chip chip-blue">
-          <span class="chip-n">{{ this_week | length }}</span>
-          <span class="chip-l">This week</span>
-        </div>
-        <div class="stat-chip chip-green">
-          <span class="chip-n">{{ completed | length }}</span>
-          <span class="chip-l">Done</span>
-        </div>
+        <div class="stat-chip chip-all"><span class="chip-n">{{ active|length }}</span><span class="chip-l">Active</span></div>
+        <div class="stat-chip chip-red"><span class="chip-n">{{ overdue|length }}</span><span class="chip-l">Overdue</span></div>
+        <div class="stat-chip chip-orange"><span class="chip-n">{{ urgent|length }}</span><span class="chip-l">Today</span></div>
+        <div class="stat-chip chip-blue"><span class="chip-n">{{ this_week|length }}</span><span class="chip-l">This week</span></div>
+        <div class="stat-chip chip-green"><span class="chip-n">{{ completed|length }}</span><span class="chip-l">Done</span></div>
       </div>
     </div>
 
-    <!-- Main grid -->
     <div class="dash-grid">
 
-      <!-- Left: Add task form -->
+      <!-- Add task form -->
       <aside class="sidebar">
         <div class="add-card">
           <div class="card-head">
-            <div class="card-icon" aria-hidden="true">➕</div>
+            <div class="card-icon">➕</div>
             <h2 class="card-title">Add task</h2>
           </div>
-
           <form action="{{ url_for('add_task') }}" method="POST" class="add-form" novalidate>
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
             <div class="field">
               <label for="f-subject">Subject</label>
               <input id="f-subject" name="subject" placeholder="e.g. Mathematics"
@@ -98,29 +83,22 @@
                 {% for s in subjects %}<option value="{{ s }}">{% endfor %}
               </datalist>
             </div>
-
             <div class="field">
               <label for="f-title">Task title</label>
               <input id="f-title" name="title" placeholder="e.g. Chapter 5 assignment"
                      maxlength="120" required>
             </div>
-
             <div class="field">
               <label for="f-type">Type</label>
               <select id="f-type" name="type">
                 {% for t in task_types %}
                 <option value="{{ t }}">
-                  {% if t == 'Assignment' %}📝
-                  {% elif t == 'Exam' %}📖
-                  {% elif t == 'Lab' %}🧪
-                  {% elif t == 'Project' %}🏗️
-                  {% else %}❓{% endif %}
+                  {% if t=='Assignment'%}📝{% elif t=='Exam'%}📖{% elif t=='Lab'%}🧪{% elif t=='Project'%}🏗️{% else %}❓{% endif %}
                   {{ t }}
                 </option>
                 {% endfor %}
               </select>
             </div>
-
             <div class="field-row">
               <div class="field">
                 <label for="f-deadline">Date</label>
@@ -131,32 +109,55 @@
                 <input id="f-time" name="deadline_time" type="time">
               </div>
             </div>
-
             <div class="field">
               <label for="f-hours">Estimated hours</label>
-              <input id="f-hours" name="hours" type="number" min="1" max="200"
-                     placeholder="e.g. 3" value="2">
+              <input id="f-hours" name="hours" type="number" min="1" max="200" value="2">
             </div>
-
             <div class="field">
               <label for="f-notes">Notes <span class="opt">(optional)</span></label>
-              <textarea id="f-notes" name="notes"
-                        placeholder="Submission link, prof's email…"
+              <textarea id="f-notes" name="notes" placeholder="Submission link, prof email…"
                         maxlength="500" rows="2"></textarea>
             </div>
-
             <button type="submit" class="btn-primary btn-add">Add task</button>
+          </form>
+        </div>
+
+        <!-- FIX 5: Bulk actions -->
+        <div class="bulk-card" id="bulk-card" hidden>
+          <div class="card-head">
+            <div class="card-icon">⚡</div>
+            <h2 class="card-title">Bulk actions</h2>
+          </div>
+          <p class="bulk-sel-count"><span id="sel-count">0</span> task(s) selected</p>
+          <form action="{{ url_for('bulk_action') }}" method="POST" id="bulk-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div id="bulk-ids"></div>
+            <button type="submit" name="action" value="complete" class="btn-bulk btn-bulk-done">
+              ✅ Mark complete
+            </button>
+            <button type="submit" name="action" value="delete"
+                    class="btn-bulk btn-bulk-del"
+                    onclick="return confirm('Delete selected tasks?')">
+              🗑 Delete selected
+            </button>
+          </form>
+          <form action="{{ url_for('bulk_action') }}" method="POST" style="margin-top:8px">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" name="action" value="clear_completed"
+                    class="btn-bulk btn-bulk-clear"
+                    onclick="return confirm('Clear all completed tasks?')">
+              🧹 Clear all completed
+            </button>
           </form>
         </div>
       </aside>
 
-      <!-- Right: Grouped task list -->
+      <!-- Task list -->
       <section class="tasks-section">
 
-        <!-- Filter bar -->
         <div class="filter-bar">
           <div class="search-wrap">
-            <span class="search-icon" aria-hidden="true">🔍</span>
+            <span class="search-icon">🔍</span>
             <input type="search" id="task-search" placeholder="Search tasks…" aria-label="Search tasks">
           </div>
           <div class="filter-tabs">
@@ -165,124 +166,103 @@
             <button class="filter-tab" data-filter="done">Done</button>
             <button class="filter-tab" data-filter="all">All</button>
           </div>
+          <!-- FIX 5: Select all -->
+          <button class="select-all-btn" id="select-all-btn" title="Select all visible tasks">☑ Select</button>
         </div>
 
         <div class="task-list" id="task-list">
-
           {% if tasks %}
 
-            <!-- OVERDUE GROUP -->
-            {% set overdue_tasks = tasks | selectattr('color', 'equalto', 'overdue') | selectattr('completed', 'equalto', false) | list %}
+            {% set overdue_tasks = tasks|selectattr('color','equalto','overdue')|selectattr('completed','equalto',false)|list %}
             {% if overdue_tasks %}
             <div class="task-group" data-group="overdue">
               <div class="group-header gh-overdue">
                 <span class="gh-icon">🔴</span>
                 <span class="gh-title">Overdue</span>
-                <span class="gh-count">{{ overdue_tasks | length }}</span>
+                <span class="gh-count">{{ overdue_tasks|length }}</span>
               </div>
-              {% for t in overdue_tasks %}
-                {% include 'partials/task_row.html' %}
-              {% endfor %}
+              {% for t in overdue_tasks %}{% include 'partials/task_row.html' %}{% endfor %}
             </div>
             {% endif %}
 
-            <!-- DUE TODAY GROUP -->
-            {% set today_tasks = tasks | selectattr('color', 'equalto', 'urgent') | selectattr('completed', 'equalto', false) | list %}
+            {% set today_tasks = tasks|selectattr('color','equalto','urgent')|selectattr('completed','equalto',false)|list %}
             {% if today_tasks %}
             <div class="task-group" data-group="urgent">
               <div class="group-header gh-urgent">
                 <span class="gh-icon">🟠</span>
                 <span class="gh-title">Due Today</span>
-                <span class="gh-count">{{ today_tasks | length }}</span>
+                <span class="gh-count">{{ today_tasks|length }}</span>
               </div>
-              {% for t in today_tasks %}
-                {% include 'partials/task_row.html' %}
-              {% endfor %}
+              {% for t in today_tasks %}{% include 'partials/task_row.html' %}{% endfor %}
             </div>
             {% endif %}
 
-            <!-- DUE SOON GROUP (3 days) -->
-            {% set soon_tasks = tasks | selectattr('color', 'equalto', 'high') | selectattr('completed', 'equalto', false) | list %}
+            {% set soon_tasks = tasks|selectattr('color','equalto','high')|selectattr('completed','equalto',false)|list %}
             {% if soon_tasks %}
             <div class="task-group" data-group="high">
               <div class="group-header gh-high">
                 <span class="gh-icon">🟡</span>
                 <span class="gh-title">Due Soon <span class="gh-sub">within 3 days</span></span>
-                <span class="gh-count">{{ soon_tasks | length }}</span>
+                <span class="gh-count">{{ soon_tasks|length }}</span>
               </div>
-              {% for t in soon_tasks %}
-                {% include 'partials/task_row.html' %}
-              {% endfor %}
+              {% for t in soon_tasks %}{% include 'partials/task_row.html' %}{% endfor %}
             </div>
             {% endif %}
 
-            <!-- THIS WEEK GROUP -->
-            {% set week_tasks = tasks | selectattr('color', 'equalto', 'medium') | selectattr('completed', 'equalto', false) | list %}
+            {% set week_tasks = tasks|selectattr('color','equalto','medium')|selectattr('completed','equalto',false)|list %}
             {% if week_tasks %}
             <div class="task-group" data-group="medium">
               <div class="group-header gh-medium">
                 <span class="gh-icon">🔵</span>
                 <span class="gh-title">This Week <span class="gh-sub">within 7 days</span></span>
-                <span class="gh-count">{{ week_tasks | length }}</span>
+                <span class="gh-count">{{ week_tasks|length }}</span>
               </div>
-              {% for t in week_tasks %}
-                {% include 'partials/task_row.html' %}
-              {% endfor %}
+              {% for t in week_tasks %}{% include 'partials/task_row.html' %}{% endfor %}
             </div>
             {% endif %}
 
-            <!-- UPCOMING GROUP -->
-            {% set upcoming_tasks = tasks | selectattr('color', 'equalto', 'safe') | selectattr('completed', 'equalto', false) | list %}
+            {% set upcoming_tasks = tasks|selectattr('color','equalto','safe')|selectattr('completed','equalto',false)|list %}
             {% if upcoming_tasks %}
             <div class="task-group" data-group="safe">
               <div class="group-header gh-safe">
                 <span class="gh-icon">🟢</span>
                 <span class="gh-title">Upcoming</span>
-                <span class="gh-count">{{ upcoming_tasks | length }}</span>
+                <span class="gh-count">{{ upcoming_tasks|length }}</span>
               </div>
-              {% for t in upcoming_tasks %}
-                {% include 'partials/task_row.html' %}
-              {% endfor %}
+              {% for t in upcoming_tasks %}{% include 'partials/task_row.html' %}{% endfor %}
             </div>
             {% endif %}
 
-            <!-- COMPLETED GROUP -->
-            {% set done_tasks = tasks | selectattr('completed', 'equalto', true) | list %}
+            {% set done_tasks = tasks|selectattr('completed','equalto',true)|list %}
             {% if done_tasks %}
             <div class="task-group" data-group="done">
               <div class="group-header gh-done">
                 <span class="gh-icon">✅</span>
                 <span class="gh-title">Completed</span>
-                <span class="gh-count">{{ done_tasks | length }}</span>
-                <button class="gh-toggle" onclick="toggleGroup(this)" aria-label="Toggle completed tasks">▼</button>
+                <span class="gh-count">{{ done_tasks|length }}</span>
+                <button class="gh-toggle" onclick="toggleGroup(this)">▼</button>
               </div>
               <div class="group-body collapsed">
-                {% for t in done_tasks %}
-                  {% include 'partials/task_row.html' %}
-                {% endfor %}
+                {% for t in done_tasks %}{% include 'partials/task_row.html' %}{% endfor %}
               </div>
             </div>
             {% endif %}
 
           {% else %}
             <div class="empty-state">
-              <span class="empty-icon" aria-hidden="true">📭</span>
+              <span class="empty-icon">📭</span>
               <h3>No tasks yet</h3>
-              <p>Add your first deadline using the form on the left.<br>
-                 Start with whatever is due soonest.</p>
+              <p>Add your first deadline using the form on the left.</p>
             </div>
           {% endif %}
-
         </div>
 
         <div class="no-results" id="no-results" hidden>
-          <span aria-hidden="true">🔍</span>
-          <p>No tasks match your search.</p>
+          <span>🔍</span><p>No tasks match your search.</p>
         </div>
 
       </section>
     </div>
   </main>
 </div>
-
 {% endblock %}
