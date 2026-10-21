@@ -327,6 +327,7 @@ body {
 .empty-icon { font-size:48px; display:block; margin-bottom:14px; }
 .empty-state h3 { font-size:15px; font-weight:700; color:var(--text-mid); margin-bottom:6px; }
 .empty-state p,.no-results p { font-size:13px; line-height:1.6; }
+.edit-card { max-width: 460px; margin: 0 auto; }
 
 /* ── Responsive ──────────────────────────────────────────────────────────────── */
 @media (max-width:900px) {
